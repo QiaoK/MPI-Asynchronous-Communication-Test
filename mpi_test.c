@@ -188,7 +188,7 @@ int many_to_all(int rank, int isagg, int procs, int cb_nodes, int data_size, int
                 start = MPI_Wtime();
                 for ( i = k; i < procs; i+=steps ){
                     MPI_Issend(send_buf, data_size, MPI_BYTE, i, rank + i, MPI_COMM_WORLD, &requests[cb_nodes + x]);
-                    x++
+                    x++;
                 }
                 timer->post_request_time += MPI_Wtime() - start;
             }
