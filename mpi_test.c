@@ -238,6 +238,9 @@ int main(int argc, char **argv){
     int rank, procs, cb_nodes = 0, method = 0, data_size = 0, isagg, i, comm_size = 200000000;
     int *rank_list;
     Timer timer1,max_timer1,timer2,max_timer2;
+    char filename[1024];
+    FILE* stream;
+
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&procs);
@@ -281,6 +284,31 @@ int main(int argc, char **argv){
             printf("| All-to-many rank 0 waitall time = %lf\n",timer1.wait_all_time);
             printf("| All-to-many max request post time = %lf\n",max_timer1.post_request_time);
             printf("| All-to-many max waitall time = %lf\n",max_timer1.wait_all_time);
+            sprintf(filename,"all_to_many_results.csv");
+            stream = fopen(filename,"r");
+            if (stream){
+                fclose(stream);
+                stream = fopen(filename,"a");
+            } else {
+                stream = fopen(filename,"w");
+                fprintf(stream,"# of processes,");
+                fprintf(stream,"# of aggregators,");
+                fprintf(stream,"data size,");
+                fprintf(stream,"max comm,");
+                fprintf(stream,"rank 0 post_request_time,");
+                fprintf(stream,"rank 0 waitall time,");
+                fprintf(stream,"max post_request_time,");
+                fprintf(stream,"max waitall time\n");
+            }
+            fprintf(stream,"%d,",procs);
+            fprintf(stream,"%d,",cb_nodes);
+            fprintf(stream,"%d,",data_size);
+            fprintf(stream,"%d,",comm_size);
+            fprintf(stream,"%lf,",timer1.post_request_time);
+            fprintf(stream,"%lf,",timer1.wait_all_time);
+            fprintf(stream,"%lf,",max_timer1.post_request_time);
+            fprintf(stream,"%lf\n",max_timer1.wait_all_time);
+            fclose(stream);
         }
     }
     if (method == 0 || method == 2){
@@ -292,6 +320,31 @@ int main(int argc, char **argv){
             printf("| Many-to-all rank 0 waitall time = %lf\n",timer2.wait_all_time);
 	    printf("| Many-to-all max request post time = %lf\n",max_timer2.post_request_time);
 	    printf("| Many-to-all max waitall time = %lf\n",max_timer2.wait_all_time);
+            sprintf(filename,"many_to_all_results.csv");
+            stream = fopen(filename,"r");
+            if (stream){
+                fclose(stream);
+                stream = fopen(filename,"a");
+            } else {
+                stream = fopen(filename,"w");
+                fprintf(stream,"# of processes,");
+                fprintf(stream,"# of aggregators,");
+                fprintf(stream,"data size,");
+                fprintf(stream,"max comm,");
+                fprintf(stream,"rank 0 post_request_time,");
+                fprintf(stream,"rank 0 waitall time,");
+                fprintf(stream,"max post_request_time,");
+                fprintf(stream,"max waitall time\n");
+            }
+            fprintf(stream,"%d,",procs);
+            fprintf(stream,"%d,",cb_nodes);
+            fprintf(stream,"%d,",data_size);
+            fprintf(stream,"%d,",comm_size);
+            fprintf(stream,"%lf,",timer2.post_request_time);
+            fprintf(stream,"%lf,",timer2.wait_all_time);
+            fprintf(stream,"%lf,",max_timer2.post_request_time);
+            fprintf(stream,"%lf\n",max_timer2.wait_all_time);
+            fclose(stream);
         }
     }
     if (rank == 0){
