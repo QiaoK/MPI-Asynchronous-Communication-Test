@@ -60,6 +60,10 @@ int all_to_many(int rank, int isagg, int procs, int cb_nodes, int data_size, int
     char **recv_buf = NULL;
     MPI_Status *status;
     MPI_Request *requests;
+    timer->post_request_time = 0;
+    timer->wait_all_time = 0;
+    timer->total_time = 0;
+
     if (isagg){
         requests = (MPI_Request*) malloc(sizeof(MPI_Request) * (cb_nodes + procs));
         status = (MPI_Status*) malloc(sizeof(MPI_Status) * (cb_nodes + procs));
@@ -89,11 +93,11 @@ int all_to_many(int rank, int isagg, int procs, int cb_nodes, int data_size, int
         for ( i = 0; i < cb_nodes; ++i ){
             MPI_Issend(send_buf, data_size, MPI_BYTE, rank_list[i], rank + rank_list[i], MPI_COMM_WORLD, &requests[j++]);
         }
-        timer->post_request_time = MPI_Wtime() - start;
+        timer->post_request_time += MPI_Wtime() - start;
         if (j) {
             start = MPI_Wtime();
             MPI_Waitall(j, requests, status);
-            timer->wait_all_time = MPI_Wtime() - start;
+            timer->wait_all_time += MPI_Wtime() - start;
         }
     }else {
         // We chop down the number of communications such that one waitall does not trigger more concurrent communication than comm_size.
@@ -113,15 +117,15 @@ int all_to_many(int rank, int isagg, int procs, int cb_nodes, int data_size, int
                     MPI_Issend(send_buf, data_size, MPI_BYTE, rank_list[i], rank + rank_list[i], MPI_COMM_WORLD, &requests[j++]);
                 }
             }
-            timer->post_request_time = MPI_Wtime() - start;
+            timer->post_request_time += MPI_Wtime() - start;
             if (j) {
                 start = MPI_Wtime();
                 MPI_Waitall(j, requests, status);
-                timer->wait_all_time = MPI_Wtime() - start;
+                timer->wait_all_time += MPI_Wtime() - start;
             }
         }
     }
-    timer->total_time = MPI_Wtime() - total_start;
+    timer->total_time += MPI_Wtime() - total_start;
     free(send_buf);
     free(status);
     free(requests);
@@ -141,6 +145,7 @@ int many_to_all(int rank, int isagg, int procs, int cb_nodes, int data_size, int
     MPI_Request *requests;
     timer->post_request_time = 0;
     timer->wait_all_time = 0;
+    timer->total_time = 0;
     if (isagg){
         requests = (MPI_Request*) malloc(sizeof(MPI_Request) * (cb_nodes + procs));
         status = (MPI_Status*) malloc(sizeof(MPI_Status) * (cb_nodes + procs));
