@@ -196,11 +196,13 @@ int many_to_all(int rank, int isagg, int procs, int cb_nodes, int data_size, int
             x = 0;
             if (isagg){
                 for ( i = k; i < procs; i+=steps ){
-                    MPI_Issend(send_buf, data_size, MPI_BYTE, i, rank + i, MPI_COMM_WORLD, &requests[cb_nodes + x]);
+                    MPI_Issend(send_buf, data_size, MPI_BYTE, i, rank + i, MPI_COMM_WORLD, &requests[j + x]);
+                    //MPI_Issend(send_buf, data_size, MPI_BYTE, i, rank + i, MPI_COMM_WORLD, &requests[cb_nodes + x]);
                     x++;
                 }
             }
             timer->post_request_time += MPI_Wtime() - start;
+            /*
             // Waitall for Irecv
             start = MPI_Wtime();
             if (j){
@@ -209,6 +211,10 @@ int many_to_all(int rank, int isagg, int procs, int cb_nodes, int data_size, int
             // Waitall for Issend
             if (x){
                 MPI_Waitall(x, requests + cb_nodes, status);
+            }
+            */
+            if (x + j){
+                MPI_Waitall(j+x, requests, status);
             }
             timer->wait_all_time += MPI_Wtime() - start;
         }
