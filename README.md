@@ -1,6 +1,5 @@
-## Intergroup Allgather and Allgatherv Implemented Using MPI functions
-
-The program [./test](mpi_test.c) runs the many-to-all and all-to-many.
+The program [./test](mpi_test.c) runs the many-to-all and all-to-many communication among MPI processes.
+The many group spreads out across all process ranks.
 
 * Compile command:
   * Edit file [./Makefile](Makefile) to customize the C compiler and compile
