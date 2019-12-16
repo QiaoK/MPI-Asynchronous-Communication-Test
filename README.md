@@ -68,4 +68,3 @@ Copyright (C) 2019, Northwestern University.
 
 See [COPYRIGHT](COPYRIGHT) notice in top-level directory.
 ```
-    % mpiexec ./test -n 32 -a 14 -d 2048 -c 1 -m 1 -i 5
