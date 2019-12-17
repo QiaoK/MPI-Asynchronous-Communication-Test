@@ -20,11 +20,12 @@
         printf("Error at line %d: (%s)\n", __LINE__,errorString); \
     } \
 }
-#define MAP_DATA(a,b) ((a)*123+(b)*653+14*((a)-742)*((b)-15))
+#define MAP_DATA(a,b,c) ((a)*123+(b)*653+(c+a+b)*33+14*((a)-742)*((b)-15))
 int err;
 typedef struct{
     double post_request_time;
-    double wait_all_time;
+    double send_wait_all_time;
+    double recv_wait_all_time;
     double total_time;
 }Timer;
 
@@ -45,23 +46,24 @@ usage(char *argv0)
     fprintf(stderr, help, argv0);
 }
 
-int fill_buffer(int rank, char *buf, int size){
+int fill_buffer(int rank, char *buf, int size, int seed){
     MPI_Count i;
     for ( i = 0; i < size; ++i ){
-        buf[i] = MAP_DATA(rank,i);
+        buf[i] = MAP_DATA(rank,i, seed);
     }
     return 0;
 }
 
 int all_to_many(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer){
     double start, total_start;
-    int i, j, k, steps;
+    int i, j, k, x, steps;
     char *send_buf = (char*) malloc(sizeof(char)*data_size);
     char **recv_buf = NULL;
     MPI_Status *status;
     MPI_Request *requests;
     timer->post_request_time = 0;
-    timer->wait_all_time = 0;
+    timer->recv_wait_all_time = 0;
+    timer->send_wait_all_time = 0;
     timer->total_time = 0;
 
     if (isagg){
@@ -77,7 +79,7 @@ int all_to_many(int rank, int isagg, int procs, int cb_nodes, int data_size, int
         status = (MPI_Status*) malloc(sizeof(MPI_Status) * cb_nodes);
     }
 
-    fill_buffer(rank, send_buf, data_size);
+    fill_buffer(rank, send_buf, data_size, rank);
 
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
@@ -97,32 +99,37 @@ int all_to_many(int rank, int isagg, int procs, int cb_nodes, int data_size, int
         if (j) {
             start = MPI_Wtime();
             MPI_Waitall(j, requests, status);
-            timer->wait_all_time += MPI_Wtime() - start;
+            timer->recv_wait_all_time += MPI_Wtime() - start;
         }
     }else {
+        // Post Issend
+        j=0;
+        for ( i = 0; i < cb_nodes; ++i ){
+            MPI_Issend(send_buf, data_size, MPI_BYTE, rank_list[i], rank + rank_list[i], MPI_COMM_WORLD, &requests[j++]);
+        }
         // We chop down the number of communications such that one waitall does not trigger more concurrent communication than comm_size.
         steps = (procs + comm_size - 1) / comm_size;
         for ( k = 0; k < steps; ++k ){
-            start = MPI_Wtime();
-            j = 0;
-            // Post Irecv first
+            x = 0;
+            // Post Irecv
             if (isagg){
-                for ( i = k; i < procs; i+=steps ){
-                    MPI_Irecv(recv_buf[i], data_size, MPI_BYTE, i, rank + i, MPI_COMM_WORLD, &requests[j++]);
-                }
-            }
-            // Then Issend
-            if ( rank % steps == k ){
-                for ( i = 0; i < cb_nodes; ++i ){
-                    MPI_Issend(send_buf, data_size, MPI_BYTE, rank_list[i], rank + rank_list[i], MPI_COMM_WORLD, &requests[j++]);
-                }
-            }
-            timer->post_request_time += MPI_Wtime() - start;
-            if (j) {
                 start = MPI_Wtime();
-                MPI_Waitall(j, requests, status);
-                timer->wait_all_time += MPI_Wtime() - start;
+                for ( i = k; i < procs; i+=steps ){
+                    MPI_Irecv(recv_buf[i], data_size, MPI_BYTE, i, rank + i, MPI_COMM_WORLD, &requests[cb_nodes+x]);
+                    x++;
+                }
+                timer->post_request_time += MPI_Wtime() - start;
             }
+            if (x) {
+                start = MPI_Wtime();
+                MPI_Waitall(x, requests + cb_nodes, status);
+                timer->recv_wait_all_time += MPI_Wtime() - start;
+            }
+        }
+        if (j) {
+            start = MPI_Wtime();
+            MPI_Waitall(j, requests, status);
+            timer->send_wait_all_time += MPI_Wtime() - start;
         }
     }
     timer->total_time += MPI_Wtime() - total_start;
@@ -139,17 +146,22 @@ int all_to_many(int rank, int isagg, int procs, int cb_nodes, int data_size, int
 int many_to_all(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer){
     double start, total_start;
     int i, j, k, x, steps;
-    char *send_buf = (char*) malloc(sizeof(char)*data_size);
+    char **send_buf = NULL;
     char **recv_buf = NULL;
     MPI_Status *status;
     MPI_Request *requests;
     timer->post_request_time = 0;
-    timer->wait_all_time = 0;
+    timer->send_wait_all_time = 0;
+    timer->recv_wait_all_time = 0;
     timer->total_time = 0;
     if (isagg){
         requests = (MPI_Request*) malloc(sizeof(MPI_Request) * (cb_nodes + procs));
         status = (MPI_Status*) malloc(sizeof(MPI_Status) * (cb_nodes + procs));
-        fill_buffer(rank, send_buf, data_size);
+        send_buf = (char**) malloc(sizeof(char*) * procs);
+        for ( i = 0; i < procs; ++i ){
+            send_buf[i] = (char*) malloc(sizeof(char) * data_size);
+            fill_buffer(rank, send_buf[i], data_size,i);
+        }
     } else{
         requests = (MPI_Request*) malloc(sizeof(MPI_Request) * cb_nodes);
         status = (MPI_Status*) malloc(sizeof(MPI_Status) * cb_nodes);
@@ -170,53 +182,50 @@ int many_to_all(int rank, int isagg, int procs, int cb_nodes, int data_size, int
         }
         if (isagg){
             for ( i = 0; i < procs; ++i ){
-                MPI_Issend(send_buf, data_size, MPI_BYTE, i, rank + i, MPI_COMM_WORLD, &requests[j++]);
+                MPI_Issend(send_buf[i], data_size, MPI_BYTE, i, rank + i, MPI_COMM_WORLD, &requests[j++]);
             }
         }
         timer->post_request_time += MPI_Wtime() - start;
         if (j) {
             start = MPI_Wtime();
             MPI_Waitall(j, requests, status);
-            timer->wait_all_time += MPI_Wtime() - start;
+            timer->recv_wait_all_time += MPI_Wtime() - start;
         }
     } else{
+        j = 0;
+        start = MPI_Wtime();
+        for ( i = 0; i < cb_nodes; ++i ){
+            MPI_Irecv(recv_buf[i], data_size, MPI_BYTE, rank_list[i], rank + rank_list[i], MPI_COMM_WORLD, &requests[j]);
+            j++;
+        }
+        timer->post_request_time += MPI_Wtime() - start;
         // We chop down the number of communications such that one waitall does not trigger more concurrent communication than comm_size.
         steps = (procs + comm_size - 1) / comm_size;
         for ( k = 0; k < steps; ++k ){
             // Post Irecv first
             start = MPI_Wtime();
-            j = 0;
-            if ( rank % steps == k ){
-                for ( i = 0; i < cb_nodes; ++i ){
-                    MPI_Irecv(recv_buf[i], data_size, MPI_BYTE, rank_list[i], rank + rank_list[i], MPI_COMM_WORLD, &requests[j]);
-                    j++;
-                }
-            }
             // Then Issend
             x = 0;
             if (isagg){
                 for ( i = k; i < procs; i+=steps ){
-                    MPI_Issend(send_buf, data_size, MPI_BYTE, i, rank + i, MPI_COMM_WORLD, &requests[j + x]);
-                    //MPI_Issend(send_buf, data_size, MPI_BYTE, i, rank + i, MPI_COMM_WORLD, &requests[cb_nodes + x]);
+                    //MPI_Issend(send_buf[i], data_size, MPI_BYTE, i, rank + i, MPI_COMM_WORLD, &requests[j + x]);
+                    MPI_Issend(send_buf, data_size, MPI_BYTE, i, rank + i, MPI_COMM_WORLD, &requests[cb_nodes + x]);
                     x++;
                 }
             }
             timer->post_request_time += MPI_Wtime() - start;
-            /*
-            // Waitall for Irecv
-            start = MPI_Wtime();
-            if (j){
-                MPI_Waitall(j, requests, status);
-            }
             // Waitall for Issend
             if (x){
+                start = MPI_Wtime();
                 MPI_Waitall(x, requests + cb_nodes, status);
+                timer->send_wait_all_time += MPI_Wtime() - start;
             }
-            */
-            if (x + j){
-                MPI_Waitall(j+x, requests, status);
-            }
-            timer->wait_all_time += MPI_Wtime() - start;
+        }
+        // Waitall for Irecv
+        if (j){
+            start = MPI_Wtime();
+            MPI_Waitall(j, requests, status);
+            timer->recv_wait_all_time += MPI_Wtime() - start;
         }
     }
     timer->total_time += MPI_Wtime() - total_start;
@@ -225,6 +234,9 @@ int many_to_all(int rank, int isagg, int procs, int cb_nodes, int data_size, int
     free(status);
     free(requests);
     if (isagg){
+        for ( i = 0; i < procs; ++i ){
+            free(send_buf[i]);
+        }
         free(send_buf);
     }
     return 0;
@@ -296,14 +308,16 @@ int main(int argc, char **argv){
     for ( i = 0; i < iter; ++i ){
         if (method == 0 || method == 1){
             all_to_many(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 3, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 printf("| --------------------------------------\n");
                 printf("| All-to-many rank 0 request post time = %lf\n",timer1.post_request_time);
-                printf("| All-to-many rank 0 waitall time = %lf\n",timer1.wait_all_time);
+                printf("| All-to-many rank 0 send waitall time = %lf\n",timer1.send_wait_all_time);
+                printf("| All-to-many rank 0 recv waitall time = %lf\n",timer1.recv_wait_all_time);
                 printf("| All-to-many rank 0 total time = %lf\n",timer1.total_time);
                 printf("| All-to-many max request post time = %lf\n",max_timer1.post_request_time);
-                printf("| All-to-many max waitall time = %lf\n",max_timer1.wait_all_time);
+                printf("| All-to-many max send waitall time = %lf\n",max_timer1.send_wait_all_time);
+                printf("| All-to-many max recv waitall time = %lf\n",max_timer1.recv_wait_all_time);
                 printf("| All-to-many max total time = %lf\n",max_timer1.total_time);
                 sprintf(filename,"all_to_many_results.csv");
                 stream = fopen(filename,"r");
@@ -317,10 +331,12 @@ int main(int argc, char **argv){
                     fprintf(stream,"data size,");
                     fprintf(stream,"max comm,");
                     fprintf(stream,"rank 0 post_request_time,");
-                    fprintf(stream,"rank 0 waitall time,");
+                    fprintf(stream,"rank 0 send waitall time,");
+                    fprintf(stream,"rank 0 recv waitall time,");
                     fprintf(stream,"rank 0 total time,");
                     fprintf(stream,"max post_request_time,");
-                    fprintf(stream,"max waitall time,");
+                    fprintf(stream,"max send waitall time,");
+                    fprintf(stream,"max recv waitall time,");
                     fprintf(stream,"max total time\n");
                 }
                 fprintf(stream,"%d,",procs);
@@ -328,24 +344,28 @@ int main(int argc, char **argv){
                 fprintf(stream,"%d,",data_size);
                 fprintf(stream,"%d,",comm_size);
                 fprintf(stream,"%lf,",timer1.post_request_time);
-                fprintf(stream,"%lf,",timer1.wait_all_time);
+                fprintf(stream,"%lf,",timer1.send_wait_all_time);
+                fprintf(stream,"%lf,",timer1.recv_wait_all_time);
                 fprintf(stream,"%lf,",timer1.total_time);
                 fprintf(stream,"%lf,",max_timer1.post_request_time);
-                fprintf(stream,"%lf,",max_timer1.wait_all_time);
+                fprintf(stream,"%lf,",max_timer1.send_wait_all_time);
+                fprintf(stream,"%lf,",max_timer1.recv_wait_all_time);
                 fprintf(stream,"%lf\n",max_timer1.total_time);
                 fclose(stream);
             }
         }
         if (method == 0 || method == 2){
             many_to_all(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer2);
-            MPI_Reduce((double*)(&timer2), (double*)(&max_timer2), 3, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer2), (double*)(&max_timer2), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 printf("| --------------------------------------\n");
                 printf("| Many-to-all rank 0 request post time = %lf\n",timer2.post_request_time);
-                printf("| Many-to-all rank 0 waitall time = %lf\n",timer2.wait_all_time);
+                printf("| Many-to-all rank 0 send waitall time = %lf\n",timer2.send_wait_all_time);
+                printf("| Many-to-all rank 0 recv waitall time = %lf\n",timer2.recv_wait_all_time);
                 printf("| Many-to-all rank 0 total time = %lf\n",timer2.total_time);
 	        printf("| Many-to-all max request post time = %lf\n",max_timer2.post_request_time);
-	        printf("| Many-to-all max waitall time = %lf\n",max_timer2.wait_all_time);
+	        printf("| Many-to-all max send waitall time = %lf\n",max_timer2.send_wait_all_time);
+	        printf("| Many-to-all max recv waitall time = %lf\n",max_timer2.recv_wait_all_time);
 	        printf("| Many-to-all max total time = %lf\n",max_timer2.total_time);
                 sprintf(filename,"many_to_all_results.csv");
                 stream = fopen(filename,"r");
@@ -359,10 +379,12 @@ int main(int argc, char **argv){
                     fprintf(stream,"data size,");
                     fprintf(stream,"max comm,");
                     fprintf(stream,"rank 0 post_request_time,");
-                    fprintf(stream,"rank 0 waitall time,");
+                    fprintf(stream,"rank 0 send waitall time,");
+                    fprintf(stream,"rank 0 recv waitall time,");
                     fprintf(stream,"rank 0 total time,");
                     fprintf(stream,"max post_request_time,");
-                    fprintf(stream,"max waitall time,");
+                    fprintf(stream,"max send waitall time,");
+                    fprintf(stream,"max recv waitall time,");
                     fprintf(stream,"max total time\n");
                 }
                 fprintf(stream,"%d,",procs);
@@ -370,10 +392,12 @@ int main(int argc, char **argv){
                 fprintf(stream,"%d,",data_size);
                 fprintf(stream,"%d,",comm_size);
                 fprintf(stream,"%lf,",timer2.post_request_time);
-                fprintf(stream,"%lf,",timer2.wait_all_time);
+                fprintf(stream,"%lf,",timer2.send_wait_all_time);
+                fprintf(stream,"%lf,",timer2.recv_wait_all_time);
                 fprintf(stream,"%lf,",timer2.total_time);
                 fprintf(stream,"%lf,",max_timer2.post_request_time);
-                fprintf(stream,"%lf,",max_timer2.wait_all_time);
+                fprintf(stream,"%lf,",max_timer2.send_wait_all_time);
+                fprintf(stream,"%lf,",max_timer2.recv_wait_all_time);
                 fprintf(stream,"%lf\n",max_timer2.total_time);
                 fclose(stream);
             }
