@@ -104,9 +104,11 @@ int all_to_many(int rank, int isagg, int procs, int cb_nodes, int data_size, int
     }else {
         // Post Issend
         j=0;
+        start = MPI_Wtime();
         for ( i = 0; i < cb_nodes; ++i ){
             MPI_Issend(send_buf, data_size, MPI_BYTE, rank_list[i], rank + rank_list[i], MPI_COMM_WORLD, &requests[j++]);
         }
+        timer->post_request_time += MPI_Wtime() - start;
         // We chop down the number of communications such that one waitall does not trigger more concurrent communication than comm_size.
         steps = (procs + comm_size - 1) / comm_size;
         for ( k = 0; k < steps; ++k ){
@@ -174,9 +176,9 @@ int many_to_all(int rank, int isagg, int procs, int cb_nodes, int data_size, int
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
     if ( comm_size > procs ){
+        j = 0;
         // If the maximum communication size is greater than the number of processes, we just run many-to-all communication directly.
         start = MPI_Wtime();
-        j = 0;
         for ( i = 0; i < cb_nodes; ++i ){
             MPI_Irecv(recv_buf[i], data_size, MPI_BYTE, rank_list[i], rank + rank_list[i], MPI_COMM_WORLD, &requests[j++]);
         }
@@ -193,6 +195,7 @@ int many_to_all(int rank, int isagg, int procs, int cb_nodes, int data_size, int
         }
     } else{
         j = 0;
+        // Post Irecv first
         start = MPI_Wtime();
         for ( i = 0; i < cb_nodes; ++i ){
             MPI_Irecv(recv_buf[i], data_size, MPI_BYTE, rank_list[i], rank + rank_list[i], MPI_COMM_WORLD, &requests[j]);
@@ -202,18 +205,17 @@ int many_to_all(int rank, int isagg, int procs, int cb_nodes, int data_size, int
         // We chop down the number of communications such that one waitall does not trigger more concurrent communication than comm_size.
         steps = (procs + comm_size - 1) / comm_size;
         for ( k = 0; k < steps; ++k ){
-            // Post Irecv first
-            start = MPI_Wtime();
             // Then Issend
             x = 0;
             if (isagg){
+                start = MPI_Wtime();
                 for ( i = k; i < procs; i+=steps ){
                     //MPI_Issend(send_buf[i], data_size, MPI_BYTE, i, rank + i, MPI_COMM_WORLD, &requests[j + x]);
                     MPI_Issend(send_buf, data_size, MPI_BYTE, i, rank + i, MPI_COMM_WORLD, &requests[cb_nodes + x]);
                     x++;
                 }
+                timer->post_request_time += MPI_Wtime() - start;
             }
-            timer->post_request_time += MPI_Wtime() - start;
             // Waitall for Issend
             if (x){
                 start = MPI_Wtime();
