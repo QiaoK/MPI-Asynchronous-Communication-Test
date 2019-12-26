@@ -12,7 +12,6 @@
 #include <string.h>
 #include <math.h>
 #define DEBUG 0
-#define PROC_NODE 64
 #define ERR { \
     if (err != MPI_SUCCESS) { \
         int errorStringLen; \
@@ -190,14 +189,14 @@ int many_to_all_balanced_boundary(int rank, int isagg, int procs, int cb_nodes, 
         start = MPI_Wtime();
         for ( i = 0; i < cb_nodes; ++i ){
             for ( x = 0; x < comm_size; ++x ){
-                if ( rank == (k + i * PROC_NODE + x) % procs ) {
+                if ( rank == (k + i * 64 + x) % procs ) {
                     MPI_Irecv(recv_buf[i], data_size, MPI_BYTE, rank_list[i], rank + rank_list[i], MPI_COMM_WORLD, &requests[j++]);
                 }
             }
         }
         if (isagg){
             for ( i = 0; i < comm_size; ++i ){
-                temp = (PROC_NODE * myindex + k + i) % procs;
+                temp = (64 * myindex + k + i) % procs;
                 MPI_Issend(send_buf[temp], data_size, MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
             }
         }
