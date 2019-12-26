@@ -641,6 +641,7 @@ int main(int argc, char **argv){
                 summarize_results(procs, cb_nodes, data_size, comm_size, "many_to_all_balanced_results.csv", "Many to all balanced", timer1, max_timer1);
             }
         }
+/*
         if (method == 0 || method == 5){
             many_to_all_balanced_boundary(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1);
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
@@ -648,6 +649,7 @@ int main(int argc, char **argv){
                 summarize_results(procs, cb_nodes, data_size, comm_size, "many_to_all_balanced_boundary_results.csv", "Many to all balanced boundary", timer1, max_timer1);
             }
         }
+*/
         if (rank == 0){
             printf("| --------------------------------------\n");
         }
