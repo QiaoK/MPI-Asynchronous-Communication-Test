@@ -104,8 +104,9 @@ int all_to_many_striped(int rank, int isagg, int procs, int cb_nodes, int proc_n
                 
             }
         }
-        for ( i = 0; i < cb_nodes; ++i ){
-            MPI_Issend(send_buf[i], data_size, MPI_BYTE, rank_list[i], rank + rank_list[i], MPI_COMM_WORLD, &requests[j++]);
+        for ( i = 0; i < comm_size; ++i ){
+            temp = (rank + i)%cb_nodes;
+            MPI_Issend(send_buf[temp], data_size, MPI_BYTE, rank_list[temp], rank + rank_list[temp], MPI_COMM_WORLD, &requests[j++]);
         }
         timer->post_request_time += MPI_Wtime() - start;
         if (j) {
