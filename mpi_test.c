@@ -94,7 +94,7 @@ int all_to_many_striped(int rank, int isagg, int procs, int cb_nodes, int proc_n
 
     //steps = (procs + comm_size - 1) / comm_size;
 
-    if (comm_size > procs){
+    if (comm_size >= procs){
         // If the maximum communication size is greater than the number of processes, we just run many-to-all communication directly.
         start = MPI_Wtime();
         j = 0;
@@ -269,7 +269,7 @@ int many_to_all_balanced_boundary(int rank, int isagg, int procs, int cb_nodes, 
         start = MPI_Wtime();
         for ( i = 0; i < cb_nodes; ++i ){
             for ( x = 0; x < comm_size; ++x ){
-                if ( rank == (k + i * PROC_NODE + x) % procs ) {
+                if ( rank == (k + i * proc_node + x) % procs ) {
                     MPI_Irecv(recv_buf[i], data_size, MPI_BYTE, rank_list[i], rank + rank_list[i], MPI_COMM_WORLD, &requests[j++]);
                 }
             }
@@ -428,7 +428,7 @@ int all_to_many_interleaved(int rank, int isagg, int procs, int cb_nodes, int pr
 
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
-    if (comm_size > procs){
+    if (comm_size >= procs){
         // If the maximum communication size is greater than the number of processes, we just run many-to-all communication directly.
         start = MPI_Wtime();
         j = 0;
@@ -498,7 +498,7 @@ int all_to_many(int rank, int isagg, int procs, int cb_nodes, int proc_node, int
 
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
-    if (comm_size > procs){
+    if (comm_size >= procs){
         // If the maximum communication size is greater than the number of processes, we just run many-to-all communication directly.
         start = MPI_Wtime();
         j = 0;
@@ -593,7 +593,7 @@ int many_to_all_interleaved(int rank, int isagg, int procs, int cb_nodes, int pr
     }
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
-    if ( comm_size > procs ){
+    if ( comm_size >= procs ){
         j = 0;
         // If the maximum communication size is greater than the number of processes, we just run many-to-all communication directly.
         start = MPI_Wtime();
@@ -657,7 +657,7 @@ int many_to_all_striped(int rank, int isagg, int procs, int cb_nodes, int proc_n
     }
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
-    if ( comm_size > procs ){
+    if ( comm_size >= procs ){
         j = 0;
         // If the maximum communication size is greater than the number of processes, we just run many-to-all communication directly.
         start = MPI_Wtime();
@@ -725,7 +725,7 @@ int many_to_all(int rank, int isagg, int procs, int cb_nodes, int proc_node, int
     }
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
-    if ( comm_size > procs ){
+    if ( comm_size >= procs ){
         j = 0;
         // If the maximum communication size is greater than the number of processes, we just run many-to-all communication directly.
         start = MPI_Wtime();
