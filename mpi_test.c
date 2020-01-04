@@ -85,9 +85,6 @@ int all_to_many_striped(int rank, int isagg, int procs, int cb_nodes, int proc_n
         send_buf[i] = (char*) malloc(sizeof(char) * data_size);
         fill_buffer(rank, send_buf[i], data_size,i,iter);
     }
-    if (comm_size > cb_nodes){
-        comm_size = cb_nodes;
-    }
 
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
@@ -107,7 +104,7 @@ int all_to_many_striped(int rank, int isagg, int procs, int cb_nodes, int proc_n
                 
             }
         }
-        for ( i = 0; i < comm_size; ++i ){
+        for ( i = 0; i < cb_nodes; ++i ){
             temp = (rank + i)%cb_nodes;
             MPI_Issend(send_buf[temp], data_size, MPI_BYTE, rank_list[temp], rank + rank_list[temp], MPI_COMM_WORLD, &requests[j++]);
         }
@@ -417,9 +414,6 @@ int all_to_many_interleaved(int rank, int isagg, int procs, int cb_nodes, int pr
         status = (MPI_Status*) malloc(sizeof(MPI_Status) * cb_nodes);
     }
 
-    if (comm_size > cb_nodes){
-        comm_size = cb_nodes;
-    }
     send_buf = (char**) malloc(sizeof(char*) * cb_nodes);
     for ( i = 0; i < cb_nodes; ++i ){
         send_buf[i] = (char*) malloc(sizeof(char) * data_size);
@@ -438,7 +432,7 @@ int all_to_many_interleaved(int rank, int isagg, int procs, int cb_nodes, int pr
                 MPI_Irecv(recv_buf[temp], data_size, MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
             }
         }
-        for ( i = 0; i < comm_size; ++i ){
+        for ( i = 0; i < cb_nodes; ++i ){
             temp = (rank + i)%cb_nodes;
             MPI_Issend(send_buf[temp], data_size, MPI_BYTE, rank_list[temp], rank + rank_list[temp], MPI_COMM_WORLD, &requests[j++]);
         }
