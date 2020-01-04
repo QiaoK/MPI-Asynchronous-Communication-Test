@@ -57,7 +57,7 @@ int fill_buffer(int rank, char *buf, int size, int seed, int iter){
 
 int all_to_many_striped(int rank, int isagg, int procs, int cb_nodes, int proc_node, int data_size, int *rank_list, int comm_size, Timer *timer, int iter){
     double start, total_start;
-    int i, j, x, temp;
+    int i, j, x, temp, myindex;
     char **send_buf;
     char **recv_buf = NULL;
     MPI_Status *status;
@@ -74,6 +74,11 @@ int all_to_many_striped(int rank, int isagg, int procs, int cb_nodes, int proc_n
         recv_buf[0] = (char*) malloc(sizeof(char) * data_size * procs);
         for ( i = 1; i < procs; ++i ){
             recv_buf[i] = recv_buf[i-1] + data_size;
+        }
+        for ( i = 0; i < cb_nodes; ++i ){
+            if (rank_list[i] == rank){
+                myindex = i;
+            }
         }
     } else{
         requests = (MPI_Request*) malloc(sizeof(MPI_Request) * cb_nodes);
