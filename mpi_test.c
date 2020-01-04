@@ -101,8 +101,8 @@ int all_to_many_striped(int rank, int isagg, int procs, int cb_nodes, int proc_n
         start = MPI_Wtime();
         j = 0;
         if (isagg) {
-            for ( i = 0; i < proc_node; ++i ){
-                for ( x = i; x < procs; x+=proc_node ){
+            for ( i = 0; i < cb_nodes; ++i ){
+                for ( x = i; x < procs; x+=cb_nodes ){
                     temp = (x + rank) % procs;
                     MPI_Irecv(recv_buf[temp], data_size, MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
                 }
