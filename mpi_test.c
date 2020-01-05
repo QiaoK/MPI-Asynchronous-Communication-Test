@@ -100,10 +100,6 @@ int all_to_many_striped(int rank, int isagg, int procs, int cb_nodes, int proc_n
         // If the maximum communication size is greater than the number of processes, we just run many-to-all communication directly.
         start = MPI_Wtime();
         j = 0;
-        for ( i = 0; i < cb_nodes; ++i ){
-            temp = (rank + i)%cb_nodes;
-            MPI_Issend(send_buf[temp], data_size, MPI_BYTE, rank_list[temp], rank + rank_list[temp], MPI_COMM_WORLD, &requests[j++]);
-        }
         if (isagg) {
             for ( i = 0; i < cb_nodes; ++i ){
                 for ( x = (myindex - i + cb_nodes) % cb_nodes; x < procs; x+=cb_nodes ){
@@ -112,6 +108,11 @@ int all_to_many_striped(int rank, int isagg, int procs, int cb_nodes, int proc_n
                 }
                 
             }
+        }
+        for ( i = 0; i < cb_nodes; ++i ){
+            //temp = (rank + i)%cb_nodes;
+            temp = i;
+            MPI_Issend(send_buf[temp], data_size, MPI_BYTE, rank_list[temp], rank + rank_list[temp], MPI_COMM_WORLD, &requests[j++]);
         }
         timer->post_request_time += MPI_Wtime() - start;
         if (j) {
