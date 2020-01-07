@@ -136,6 +136,68 @@ int clean_all_to_many(char ***send_buf, char*** recv_buf, MPI_Status **status, M
     return 0;
 }
 
+int many_to_all_benchmark(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter){
+    double total_start;
+    int i, myindex = 0;
+    char **send_buf;
+    char **recv_buf = NULL;
+    int *sendcounts = NULL, *recvcounts = NULL, *sdispls = NULL, *rdispls = NULL;
+    MPI_Status *status;
+    MPI_Request *requests;
+    timer->post_request_time = 0;
+    timer->recv_wait_all_time = 0;
+    timer->send_wait_all_time = 0;
+    timer->total_time = 0;
+
+    prepare_many_to_all_data(&send_buf, &recv_buf, &status, &requests, &myindex, rank, procs, isagg, cb_nodes, rank_list, data_size, iter);
+
+    if (comm_size > procs){
+        comm_size = procs;
+    }
+
+    sdispls = (int*) malloc(sizeof(int) * procs);
+    sendcounts = (int*) malloc(sizeof(int) * procs);
+    rdispls = (int*) malloc(sizeof(int) * procs);
+    recvcounts = (int*) malloc(sizeof(int) * procs);
+
+    memset(rdispls, 0, sizeof(int) * procs);
+    memset(recvcounts, 0, sizeof(int) * procs);
+    for ( i = 0; i < cb_nodes; ++i ){
+        rdispls[rank_list[i]] = i * data_size * sizeof(char);
+        recvcounts[rank_list[i]] = data_size;
+    }
+    if (isagg) {
+        for ( i = 0; i < procs; ++i ){
+            sendcounts[i] = data_size;
+            sdispls[i] = i * data_size * sizeof(char);
+        }
+    } else {
+        memset(sendcounts, 0, sizeof(int) * procs);
+        memset(sdispls, 0, sizeof(int) * procs);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    total_start = MPI_Wtime();
+    if (isagg){
+        MPI_Alltoallv(send_buf[0], sendcounts,
+                  sdispls, MPI_BYTE, recv_buf[0],
+                  recvcounts, rdispls, MPI_BYTE, MPI_COMM_WORLD);
+    }else {
+        MPI_Alltoallv(NULL, sendcounts,
+                  sdispls, MPI_BYTE, recv_buf[0],
+                  recvcounts, rdispls, MPI_BYTE, MPI_COMM_WORLD);
+    }
+    timer->total_time += MPI_Wtime() - total_start;
+
+    free(sdispls);
+    free(rdispls);
+    free(sendcounts);
+    free(recvcounts);
+
+    clean_many_to_all(&send_buf, &recv_buf, &status, &requests, isagg);
+    return 0;
+
+}
+
 int all_to_many_benchmark(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter){
     double total_start;
     int i, myindex = 0;
@@ -804,10 +866,10 @@ int main(int argc, char **argv){
         }
 
         if (method == 0 || method == 5){
-            many_to_all_balanced_boundary(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
+            many_to_all_benchmark(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
-                summarize_results(procs, cb_nodes, data_size, comm_size, "many_to_all_balanced_boundary_results.csv", "Many to all balanced boundary", timer1, max_timer1);
+                summarize_results(procs, cb_nodes, data_size, comm_size, "many_to_all_benchmark.csv", "Many to all benchmark", timer1, max_timer1);
             }
         }
 
