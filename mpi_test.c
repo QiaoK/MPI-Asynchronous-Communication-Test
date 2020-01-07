@@ -250,9 +250,9 @@ int all_to_many_benchmark(int rank, int isagg, int procs, int cb_nodes, int data
                   sdispls, MPI_BYTE, NULL,
                   recvcounts, rdispls, MPI_BYTE, MPI_COMM_WORLD, requests);
     }
-    timer->total_time += MPI_Wtime() - total_start;
-    MPI_Wait(requests, status);
 
+    MPI_Wait(requests, status);
+    timer->total_time += MPI_Wtime() - total_start;
 
     free(sdispls);
     free(rdispls);
