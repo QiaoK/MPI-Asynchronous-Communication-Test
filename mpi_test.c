@@ -124,7 +124,7 @@ int prepare_all_to_many_data(char ***send_buf, char*** recv_buf, MPI_Status **st
             r_len += r_lens[0][i];
         }
 
-        recv_buf[0][0] = (char*) malloc(sizeof(char) * r_len * procs);
+        recv_buf[0][0] = (char*) malloc(sizeof(char) * r_len);
         if (rank == 0){
             printf("%lld,%lld\n", r_len, (long long int)(recv_buf[0][0]));
         }
