@@ -110,6 +110,7 @@ int prepare_many_to_all_data(char ***send_buf, char*** recv_buf, MPI_Status **st
 }
 
 int clean_many_to_all(int rank, int procs, int cb_nodes, int *rank_list, int myindex, int iter, char ***send_buf, char*** recv_buf, MPI_Status **status, MPI_Request **requests, int **r_lens, int isagg){
+    int i;
     for ( i = 0; i < cb_nodes; ++i ){
         if ( check_buffer(rank_list[i], recv_buf[0][i], r_lens[0][i], rank, iter) ){
             printf("rank %d, message is wrong from rank %d\n",rank, rank_list[i]);
