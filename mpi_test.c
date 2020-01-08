@@ -54,6 +54,20 @@ int fill_buffer(int rank, char *buf, int size, int seed, int iter){
     return 0;
 }
 
+/*
+ * Check if current buffer has correct message or not.
+ * rank is not the current process rank, it is actually the rank of the remote sender.
+*/
+int check_buffer(int rank, char* buf, int size, int seed, int iter){
+    MPI_Count i;
+    for ( i = 0; i < ; ++i ) {
+        if ( MAP_DATA(rank,i, seed, iter) != buf[i] ){
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int prepare_many_to_all_data(char ***send_buf, char*** recv_buf, MPI_Status **status, MPI_Request **requests, int *myindex, int* s_len, int **r_lens, int rank, int procs, int isagg, int cb_nodes, int *rank_list, int data_size, int iter){
     int i;
     MPI_Aint r_len;
@@ -125,9 +139,6 @@ int prepare_all_to_many_data(char ***send_buf, char*** recv_buf, MPI_Status **st
         }
 
         recv_buf[0][0] = (char*) malloc(sizeof(char) * r_len);
-        if (rank == 0){
-            printf("%lld,%lld\n", r_len, (long long int)(recv_buf[0][0]));
-        }
         for ( i = 1; i < procs; ++i ){
             recv_buf[0][i] = recv_buf[0][i-1] + r_lens[0][i-1];
         }
