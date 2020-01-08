@@ -281,7 +281,7 @@ int all_to_many_benchmark(int rank, int isagg, int procs, int cb_nodes, int data
 
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
-/*
+
     if (isagg){
         MPI_Alltoallw(send_buf[0], sendcounts,
                   sdispls, dtypes, recv_buf[0],
@@ -291,7 +291,7 @@ int all_to_many_benchmark(int rank, int isagg, int procs, int cb_nodes, int data
                   sdispls, dtypes, NULL,
                   recvcounts, rdispls, dtypes, MPI_COMM_WORLD);
     }
-*/
+
     //MPI_Wait(requests, status);
     timer->total_time += MPI_Wtime() - total_start;
 
@@ -381,7 +381,7 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
     total_start = MPI_Wtime();
 
     //steps = (procs + comm_size - 1) / comm_size;
-/*
+
     for ( k = 0; k < cb_nodes; k+=comm_size ){
         if ( cb_nodes - k < comm_size ){
             comm_size = cb_nodes - k;
@@ -406,7 +406,7 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
             timer->recv_wait_all_time += MPI_Wtime() - start;
         }
     }
-*/
+
     timer->total_time += MPI_Wtime() - total_start;
 
     clean_all_to_many(&send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
