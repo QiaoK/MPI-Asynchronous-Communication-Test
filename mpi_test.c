@@ -62,6 +62,7 @@ int check_buffer(int rank, char* buf, int size, int seed, int iter){
     MPI_Count i;
     for ( i = 0; i < size; ++i ) {
         if ( MAP_DATA(rank,i, seed, iter) != buf[i] ){
+            printf("%d,%d\n",MAP_DATA(rank,i, seed, iter), (int)buf[i]);
             return 1;
         }
     }
