@@ -125,6 +125,9 @@ int prepare_all_to_many_data(char ***send_buf, char*** recv_buf, MPI_Status **st
         }
 
         recv_buf[0][0] = (char*) malloc(sizeof(char) * r_len * procs);
+        if (rank == 0){
+            printf("%d,%d\n", rank, (int)(recv_buf[0][0]));
+        }
         for ( i = 1; i < procs; ++i ){
             recv_buf[0][i] = recv_buf[0][i-1] + r_lens[0][i-1];
         }
@@ -278,6 +281,7 @@ int all_to_many_benchmark(int rank, int isagg, int procs, int cb_nodes, int data
 
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
+/*
     if (isagg){
         MPI_Alltoallw(send_buf[0], sendcounts,
                   sdispls, dtypes, recv_buf[0],
@@ -287,7 +291,7 @@ int all_to_many_benchmark(int rank, int isagg, int procs, int cb_nodes, int data
                   sdispls, dtypes, NULL,
                   recvcounts, rdispls, dtypes, MPI_COMM_WORLD);
     }
-
+*/
     //MPI_Wait(requests, status);
     timer->total_time += MPI_Wtime() - total_start;
 
@@ -377,7 +381,7 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
     total_start = MPI_Wtime();
 
     //steps = (procs + comm_size - 1) / comm_size;
-
+/*
     for ( k = 0; k < cb_nodes; k+=comm_size ){
         if ( cb_nodes - k < comm_size ){
             comm_size = cb_nodes - k;
@@ -402,7 +406,7 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
             timer->recv_wait_all_time += MPI_Wtime() - start;
         }
     }
-
+*/
     timer->total_time += MPI_Wtime() - total_start;
 
     clean_all_to_many(&send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
