@@ -20,7 +20,7 @@
         printf("Error at line %d: (%s)\n", __LINE__,errorString); \
     } \
 }
-#define MAP_DATA(a,b,c,d) ((a)*123+(b)*653+(c)*3+14*((a)-742)*((b)-15)+(d))
+#define MAP_DATA(a,b,c,d) ((a)*7+(b)*3+(c)*5+11*((a)-22)*((b)-56)+(d))
 int err;
 typedef struct{
     double post_request_time;
@@ -49,7 +49,7 @@ usage(char *argv0)
 int fill_buffer(int rank, char *buf, int size, int seed, int iter){
     MPI_Count i;
     for ( i = 0; i < size; ++i ){
-        buf[i] = MAP_DATA(rank,i, seed, iter);
+        buf[i] = (char) MAP_DATA(rank,i, seed, iter);
     }
     return 0;
 }
@@ -61,7 +61,7 @@ int fill_buffer(int rank, char *buf, int size, int seed, int iter){
 int check_buffer(int rank, char* buf, int size, int seed, int iter){
     MPI_Count i;
     for ( i = 0; i < size; ++i ) {
-        if ( ((char)MAP_DATA(rank,i, seed, iter)) != buf[i] ){
+        if ( ((char) MAP_DATA(rank,i, seed, iter)) != buf[i] ){
             printf("%d,%d\n",(int)((char)MAP_DATA(rank,i, seed, iter)), (int)buf[i]);
             return 1;
         }
