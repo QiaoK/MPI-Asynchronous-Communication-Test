@@ -20,7 +20,7 @@
         printf("Error at line %d: (%s)\n", __LINE__,errorString); \
     } \
 }
-#define MAP_DATA(a,b,c,d) ((a)*123+(b)*653+(c+a+b)*33+14*((a)-742)*((b)-15)+(d))
+#define MAP_DATA(a,b,c,d) ((a)*123+(b)*653+(c)*3+14*((a)-742)*((b)-15)+(d))
 int err;
 typedef struct{
     double post_request_time;
@@ -60,7 +60,7 @@ int fill_buffer(int rank, char *buf, int size, int seed, int iter){
 */
 int check_buffer(int rank, char* buf, int size, int seed, int iter){
     MPI_Count i;
-    for ( i = 0; i < ; ++i ) {
+    for ( i = 0; i < size; ++i ) {
         if ( MAP_DATA(rank,i, seed, iter) != buf[i] ){
             return 1;
         }
@@ -80,6 +80,7 @@ int prepare_many_to_all_data(char ***send_buf, char*** recv_buf, MPI_Status **st
         *status = (MPI_Status*) malloc(sizeof(MPI_Status) * (cb_nodes + procs));
         *send_buf = (char**) malloc(sizeof(char*) * procs);
         send_buf[0][0] = (char*) malloc(sizeof(char) * s_len[0] * procs);
+        fill_buffer(rank, send_buf[0][0], s_len[0], 0,iter);
         for ( i = 1; i < procs; ++i ){
             send_buf[0][i] = send_buf[0][i-1] + s_len[0];
             fill_buffer(rank, send_buf[0][i], s_len[0],i,iter);
@@ -108,7 +109,18 @@ int prepare_many_to_all_data(char ***send_buf, char*** recv_buf, MPI_Status **st
     return 0;
 }
 
-int clean_many_to_all(char ***send_buf, char*** recv_buf, MPI_Status **status, MPI_Request **requests, int **r_lens, int isagg){
+int clean_many_to_all(int rank, int procs, int cb_nodes, int *rank_list, int myindex, int iter, char ***send_buf, char*** recv_buf, MPI_Status **status, MPI_Request **requests, int **r_lens, int isagg){
+    for ( i = 0; i < cb_nodes; ++i ){
+        if ( check_buffer(rank_list[i], recv_buf[0][i], r_lens[0][i], rank, iter) ){
+            printf("rank %d, message is wrong from rank %d\n",rank, rank_list[i]);
+        }
+    }
+    rank = 0;
+    procs = 0;
+    cb_nodes = 0;
+    rank_list = NULL;
+    myindex = 0;
+    iter = 0;
     free(r_lens[0]);
     free(recv_buf[0][0]);
     free(recv_buf[0]);
@@ -163,16 +175,28 @@ int prepare_all_to_many_data(char ***send_buf, char*** recv_buf, MPI_Status **st
     return 0;
 }
 
-int clean_all_to_many(char ***send_buf, char*** recv_buf, MPI_Status **status, MPI_Request **requests, int **r_lens, int isagg){
+int clean_all_to_many(int rank, int procs, int cb_nodes, int *rank_list, int myindex, int iter, char ***send_buf, char*** recv_buf, MPI_Status **status, MPI_Request **requests, int **r_lens, int isagg){
+    int i = 0;
     free(send_buf[0][0]);
     free(send_buf[0]);
     free(status[0]);
     free(requests[0]);
     if (isagg){
+        for ( i = 0; i < procs; ++i ){
+            if ( check_buffer(i, recv_buf[0][i], r_lens[0][i], myindex, iter) ){
+                printf("rank %d, message is wrong from rank %d\n",rank, i);
+            }
+        }
         free(r_lens[0]);
         free(recv_buf[0][0]);
         free(recv_buf[0]);
     }
+    rank = 0;
+    procs = 0;
+    cb_nodes = 0;
+    rank_list = NULL;
+    myindex = 0;
+    iter = 0;
     return 0;
 }
 
@@ -238,7 +262,7 @@ int many_to_all_benchmark(int rank, int isagg, int procs, int cb_nodes, int data
     free(sendcounts);
     free(recvcounts);
 
-    clean_many_to_all(&send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+    clean_many_to_all(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
     return 0;
 
 }
@@ -312,7 +336,7 @@ int all_to_many_benchmark(int rank, int isagg, int procs, int cb_nodes, int data
     free(sendcounts);
     free(recvcounts);
 
-    clean_all_to_many(&send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+    clean_all_to_many(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
     return 0;
 
 }
@@ -364,7 +388,7 @@ int all_to_many_striped(int rank, int isagg, int procs, int cb_nodes, int data_s
     }
     timer->total_time += MPI_Wtime() - total_start;
 
-    clean_all_to_many(&send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+    clean_all_to_many(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
 
     return 0;
 }
@@ -420,7 +444,7 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
 
     timer->total_time += MPI_Wtime() - total_start;
 
-    clean_all_to_many(&send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+    clean_all_to_many(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
 
     return 0;
 }
@@ -479,7 +503,7 @@ int many_to_all_balanced_boundary(int rank, int isagg, int procs, int cb_nodes, 
     
     timer->total_time += MPI_Wtime() - total_start;
 
-    clean_many_to_all(&send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+    clean_many_to_all(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
 
     return 0;
 }
@@ -536,7 +560,7 @@ int many_to_all_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
     
     timer->total_time += MPI_Wtime() - total_start;
 
-    clean_many_to_all(&send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+    clean_many_to_all(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
 
     return 0;
 }
@@ -582,7 +606,7 @@ int all_to_many_interleaved(int rank, int isagg, int procs, int cb_nodes, int da
     }
     timer->total_time += MPI_Wtime() - total_start;
 
-    clean_all_to_many(&send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+    clean_all_to_many(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
 
     return 0;
 }
@@ -658,7 +682,7 @@ int all_to_many(int rank, int isagg, int procs, int cb_nodes, int data_size, int
     }
     timer->total_time += MPI_Wtime() - total_start;
 
-    clean_all_to_many(&send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+    clean_all_to_many(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
 
     return 0;
 }
@@ -701,7 +725,7 @@ int many_to_all_interleaved(int rank, int isagg, int procs, int cb_nodes, int da
     }
     timer->total_time += MPI_Wtime() - total_start;
 
-    clean_many_to_all(&send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+    clean_many_to_all(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
 
     return 0;
 }
@@ -779,7 +803,7 @@ int many_to_all(int rank, int isagg, int procs, int cb_nodes, int data_size, int
     }
     timer->total_time += MPI_Wtime() - total_start;
 
-    clean_many_to_all(&send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+    clean_many_to_all(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
 
     return 0;
 }
