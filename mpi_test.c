@@ -290,6 +290,7 @@ int all_to_many_benchmark(int rank, int isagg, int procs, int cb_nodes, int data
     //MPI_Wait(requests, status);
     timer->total_time += MPI_Wtime() - total_start;
 
+    free(dtypes);
     free(sdispls);
     free(rdispls);
     free(sendcounts);
