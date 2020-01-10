@@ -553,7 +553,7 @@ int all_to_many_benchmark(int rank, int isagg, int procs, int cb_nodes, int data
 
 }
 
-int all_to_many_striped(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter){
+int all_to_many_half_sync(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter){
     double start, total_start;
     int i, j, k, x, temp, s_len, *r_lens;
     int myindex = 0;
@@ -788,9 +788,10 @@ int many_to_all_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
     return 0;
 }
 
-int all_to_many_interleaved(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter){
+int all_to_many_sync(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter){
     double start, total_start;
-    int i, j, temp, myindex = 0, s_len, *r_lens;
+    int i, j, k, x, temp, temp2, s_len, *r_lens;
+    int myindex = 0;
     char **send_buf;
     char **recv_buf = NULL;
     MPI_Status *status;
@@ -802,31 +803,68 @@ int all_to_many_interleaved(int rank, int isagg, int procs, int cb_nodes, int da
 
     prepare_all_to_many_data(&send_buf, &recv_buf, &status, &requests, &myindex, &s_len, &r_lens, rank, procs, isagg, cb_nodes, rank_list, data_size, iter);
 
+    if (comm_size > cb_nodes){
+        comm_size = cb_nodes;
+    }
+
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
-    if (comm_size >= procs){
-        // If the maximum communication size is greater than the number of processes, we just run many-to-all communication directly.
-        start = MPI_Wtime();
+
+    //steps = (procs + comm_size - 1) / comm_size;
+
+    for ( k = 0; k < cb_nodes; k+=comm_size ){
+        if ( cb_nodes - k < comm_size ){
+            comm_size = cb_nodes - k;
+        }
         j = 0;
-        if (isagg) {
-            for ( i = 0; i < procs; ++i ){
-                temp = ( i + rank_list[myindex] ) % procs;
-                MPI_Irecv(recv_buf[temp], r_lens[temp], MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
+        start = MPI_Wtime();
+        if (isagg){
+/*
+            for ( i = 0; i < comm_size; ++i ){
+                temp = (rank + k + i)  % cb_nodes;
+                MPI_Issend(send_buf[temp], s_len, MPI_BYTE, rank_list[temp], rank + rank_list[temp], MPI_COMM_WORLD, &requests[j++]);
+            }
+*/
+            for ( i = 0; i < comm_size; ++i ){
+                temp = (rank + k + i)  % cb_nodes;
+                temp2 = (myindex - k - i + cb_nodes) % cb_nodes;
+                //printf("rank %d sendrecv (%d, %d)\n", rank, rank_list[temp],temp2);
+                if ( rank_list[temp] != rank && temp2 != rank ){
+                    MPI_Sendrecv( send_buf[temp],
+                              s_len, MPI_BYTE, rank_list[temp],
+                              rank + rank_list[temp],
+                              recv_buf[temp2],
+                              r_lens[temp2], MPI_BYTE, temp2,
+                              rank + temp2, MPI_COMM_WORLD, status);
+                } else if ( rank_list[temp] == rank ){
+                    // send to local memory directly
+                    memcpy(recv_buf[rank], send_buf[temp], sizeof(char) * s_len);
+                    // Only recv if it is not from the same rank
+                    if ( temp2!= rank ){
+                        MPI_Recv(recv_buf[temp2], r_lens[temp2], MPI_BYTE, temp2, rank + temp2, MPI_COMM_WORLD, status);
+                    }
+                } else if ( temp2 == rank ){
+                    // rank_list[temp] has to be != rank, memory copy done at send brank, nothing has to be done for recv
+                    MPI_Send(send_buf[temp], s_len, MPI_BYTE, rank_list[temp], rank + rank_list[temp], MPI_COMM_WORLD);
+                }
+                for ( x = temp2 + cb_nodes; x < procs; x+=cb_nodes ){
+                    //printf("rank %d recv (%d)\n", rank, x);
+                    if ( rank != x ){
+                        MPI_Recv(recv_buf[x], r_lens[x], MPI_BYTE, x, rank + x, MPI_COMM_WORLD, status);
+                    }
+                }
+            }
+        } else{
+            for ( i = 0; i < comm_size; ++i ){
+                temp = (rank + k + i)%cb_nodes;
+                //printf("rank %d send to (%d)\n",rank, rank_list[temp]);
+                MPI_Send(send_buf[temp], s_len, MPI_BYTE, rank_list[temp], rank + rank_list[temp], MPI_COMM_WORLD);
             }
         }
-        for ( i = 0; i < cb_nodes; ++i ){
-            temp = (rank + i)%cb_nodes;
-            MPI_Issend(send_buf[temp], s_len, MPI_BYTE, rank_list[temp], rank + rank_list[temp], MPI_COMM_WORLD, &requests[j++]);
-        }
-        timer->post_request_time += MPI_Wtime() - start;
-        if (j) {
-            start = MPI_Wtime();
-            MPI_Waitall(j, requests, status);
-            timer->recv_wait_all_time += MPI_Wtime() - start;
-        }
-    }else {
 
+        timer->recv_wait_all_time += MPI_Wtime() - start;
     }
+    //printf("rank %d got here\n",rank);
     timer->total_time += MPI_Wtime() - total_start;
 
     clean_all_to_many(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
@@ -1180,18 +1218,18 @@ int main(int argc, char **argv){
         }
 
         if (method == 0 || method == 6){
-            all_to_many_interleaved(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
+            all_to_many_sync(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
-                summarize_results(procs, cb_nodes, data_size, comm_size, "all_to_many_interleaved_results.csv", "All to many interleaved", timer1, max_timer1);
+                summarize_results(procs, cb_nodes, data_size, comm_size, "all_to_many_sync_results.csv", "All to many sync", timer1, max_timer1);
             }
         }
 
         if (method == 0 || method == 7){
-            all_to_many_striped(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
+            all_to_many_half_sync(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
-                summarize_results(procs, cb_nodes, data_size, comm_size, "all_to_many_striped_results.csv", "All to many stiped", timer1, max_timer1);
+                summarize_results(procs, cb_nodes, data_size, comm_size, "all_to_many_half_sync_results.csv", "All to many half sync", timer1, max_timer1);
             }
         }
 
