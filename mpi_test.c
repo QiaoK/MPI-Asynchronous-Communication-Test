@@ -72,7 +72,7 @@ int check_buffer(int rank, char* buf, int size, int seed, int iter){
 int prepare_many_to_all_data(char ***send_buf, char*** recv_buf, MPI_Status **status, MPI_Request **requests, int *myindex, int* s_len, int **r_lens, int rank, int procs, int isagg, int cb_nodes, int *rank_list, int data_size, int iter){
     int i;
     MPI_Aint r_len;
-    int span = 5;
+    int span = 1;
     *s_len = (rank % span + 1) * data_size;
     *r_lens = (int*) malloc(sizeof(int) * cb_nodes);
 
@@ -136,7 +136,7 @@ int clean_many_to_all(int rank, int procs, int cb_nodes, int *rank_list, int myi
 }
 
 int prepare_all_to_many_data(char ***send_buf, char*** recv_buf, MPI_Status **status, MPI_Request **requests, int *myindex, int *s_len, int **r_lens, int rank, int procs, int isagg, int cb_nodes, int *rank_list, int data_size, int iter){
-    int span = 5;
+    int span = 1;
     MPI_Aint r_len;
     *s_len = (rank % span + 1) * data_size;
     *r_lens = (int*) malloc(sizeof(int) * procs);
