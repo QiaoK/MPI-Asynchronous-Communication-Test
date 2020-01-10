@@ -584,22 +584,22 @@ int all_to_many_half_sync(int rank, int isagg, int procs, int cb_nodes, int data
         j = 0;
         start = MPI_Wtime();
         if (isagg){
-
+/*
             for ( i = 0; i < comm_size; ++i ){
                 temp = (rank + k + i)  %cb_nodes;
                 MPI_Issend(send_buf[temp], s_len, MPI_BYTE, rank_list[temp], rank + rank_list[temp], MPI_COMM_WORLD, &requests[j++]);
             }
-
+*/
             for ( i = 0; i < comm_size; ++i ){
                 for ( x = (myindex - k - i + cb_nodes) % cb_nodes; x < procs; x+=cb_nodes ){
-                    MPI_Recv(recv_buf[x], r_lens[x], MPI_BYTE, x, rank + x, MPI_COMM_WORLD, status);
+                    //MPI_Recv(recv_buf[x], r_lens[x], MPI_BYTE, x, rank + x, MPI_COMM_WORLD, status);
+                    MPI_Irecv(recv_buf[x], r_lens[x], MPI_BYTE, x, rank + x, MPI_COMM_WORLD, &requests[j++]);
                 }
             }
-        } else{
-            for ( i = 0; i < comm_size; ++i ){
-                temp = (rank + k + i)%cb_nodes;
-                MPI_Send(send_buf[temp], s_len, MPI_BYTE, rank_list[temp], rank + rank_list[temp], MPI_COMM_WORLD);
-            }
+        }
+        for ( i = 0; i < comm_size; ++i ){
+            temp = (rank + k + i)%cb_nodes;
+            MPI_Send(send_buf[temp], s_len, MPI_BYTE, rank_list[temp], rank + rank_list[temp], MPI_COMM_WORLD);
         }
 
         if (j) {
