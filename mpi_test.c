@@ -356,14 +356,25 @@ int many_to_all_benchmark(int rank, int isagg, int procs, int cb_nodes, int data
     }
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
+
     if (isagg){
+/*
         MPI_Alltoallw(send_buf[0], sendcounts,
                   sdispls, dtypes, recv_buf[0],
                   recvcounts, rdispls, dtypes, MPI_COMM_WORLD);
+*/
+        MPI_Alltoallv(send_buf[0], sendcounts,
+                  sdispls, MPI_BYTE, recv_buf[0],
+                  recvcounts, rdispls, MPI_BYTE, MPI_COMM_WORLD);
     }else {
+/*
         MPI_Alltoallw(NULL, sendcounts,
                   sdispls, dtypes, recv_buf[0],
                   recvcounts, rdispls, dtypes, MPI_COMM_WORLD);
+*/
+        MPI_Alltoallv(NULL, sendcounts,
+                  sdispls, MPI_BYTE, recv_buf[0],
+                  recvcounts, rdispls, MPI_BYTE, MPI_COMM_WORLD);
     }
 
     timer->total_time += MPI_Wtime() - total_start;
@@ -535,13 +546,23 @@ int all_to_many_benchmark(int rank, int isagg, int procs, int cb_nodes, int data
     total_start = MPI_Wtime();
 
     if (isagg){
+/*
         MPI_Alltoallw(send_buf[0], sendcounts,
                   sdispls, dtypes, recv_buf[0],
                   recvcounts, rdispls, dtypes, MPI_COMM_WORLD);
+*/
+        MPI_Alltoallv(send_buf[0], sendcounts,
+                  sdispls, MPI_BYTE, recv_buf[0],
+                  recvcounts, rdispls, MPI_BYTE, MPI_COMM_WORLD);
     }else {
+/*
         MPI_Alltoallw(send_buf[0], sendcounts,
                   sdispls, dtypes, NULL,
                   recvcounts, rdispls, dtypes, MPI_COMM_WORLD);
+*/
+        MPI_Alltoallv(send_buf[0], sendcounts,
+                  sdispls, MPI_BYTE, NULL,
+                  recvcounts, rdispls, MPI_BYTE, MPI_COMM_WORLD);
     }
 
     //MPI_Wait(requests, status);
