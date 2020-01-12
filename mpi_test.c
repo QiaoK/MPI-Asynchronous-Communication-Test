@@ -1272,7 +1272,7 @@ int main(int argc, char **argv){
     for ( i = 0; i < iter; ++i ){
         if (method == 0 || method == 1){
             for ( j = 0; j < ntimes; ++j ){
-                all_to_many(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
+                all_to_many(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i + j);
             }
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
@@ -1281,7 +1281,7 @@ int main(int argc, char **argv){
         }
         if (method == 0 || method == 2){
             for ( j = 0; j < ntimes; ++j ){
-                many_to_all(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
+                many_to_all(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i + j);
             }
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
@@ -1290,7 +1290,7 @@ int main(int argc, char **argv){
         }
         if (method == 0 || method == 3){
             for ( j = 0; j < ntimes; ++j ){
-                all_to_many_balanced(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
+                all_to_many_balanced(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i + j);
             }
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
@@ -1299,7 +1299,7 @@ int main(int argc, char **argv){
         }
         if (method == 0 || method == 4){
             for ( j = 0; j < ntimes; ++j ){
-                many_to_all_balanced(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
+                many_to_all_balanced(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i + j);
             }
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
@@ -1309,7 +1309,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 5){
             for ( j = 0; j < ntimes; ++j ){
-                many_to_all_benchmark(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
+                many_to_all_benchmark(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i + j);
             }
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
@@ -1319,7 +1319,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 6){
             for ( j = 0; j < ntimes; ++j ){
-                all_to_many_sync(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
+                all_to_many_sync(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i + j);
             }
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
@@ -1329,7 +1329,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 7){
             for ( j = 0; j < ntimes; ++j ){
-                all_to_many_half_sync(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
+                all_to_many_half_sync(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i + j);
             }
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
@@ -1339,7 +1339,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 8){
             for ( j = 0; j < ntimes; ++j ){
-                all_to_many_benchmark(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
+                all_to_many_benchmark(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i + j);
             }
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
@@ -1349,7 +1349,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 9){
             for ( j = 0; j < ntimes; ++j ){
-                all_to_many_pairwise(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
+                all_to_many_pairwise(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i + j);
             }
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
@@ -1359,7 +1359,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 10){
             for ( j = 0; j < ntimes; ++j ){
-                all_to_many_pairwise(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
+                all_to_many_pairwise(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i + j);
             }
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
@@ -1369,7 +1369,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 11){
             for ( j = 0; j < ntimes; ++j ){
-                many_to_all_half_sync(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i);
+                many_to_all_half_sync(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i + j);
             }
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
