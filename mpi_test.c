@@ -217,7 +217,7 @@ int many_to_all_pairwise(int rank, int isagg, int procs, int cb_nodes, int data_
     timer->send_wait_all_time = 0;
     timer->total_time = 0;
 
-    prepare_all_to_many_data(&send_buf, &recv_buf, &status, &requests, &myindex, &s_len, &r_lens, rank, procs, isagg, cb_nodes, rank_list, data_size, iter);
+    prepare_many_to_all_data(&send_buf, &recv_buf, &status, &requests, &myindex, &s_len, &r_lens, rank, procs, isagg, cb_nodes, rank_list, data_size, iter);
 
     if (comm_size > procs){
         comm_size = procs;
@@ -228,22 +228,23 @@ int many_to_all_pairwise(int rank, int isagg, int procs, int cb_nodes, int data_
     rdispls = (int*) malloc(sizeof(int) * procs);
     recvcounts = (int*) malloc(sizeof(int) * procs);
 
-    memset(sdispls, 0, sizeof(int) * procs);
-    memset(sendcounts, 0, sizeof(int) * procs);
-    for ( i = 0; i < cb_nodes; ++i ){
-        sdispls[rank_list[i]] = i * s_len * sizeof(char);
-        sendcounts[rank_list[i]] = s_len;
+    memset(rdispls, 0, sizeof(int) * procs);
+    memset(recvcounts, 0, sizeof(int) * procs);
+
+    rdispls[rank_list[0]] = 0;
+    recvcounts[rank_list[0]] = r_lens[0];
+    for ( i = 1; i < cb_nodes; ++i ){
+        rdispls[rank_list[i]] = rdispls[rank_list[i-1]] + r_lens[i-1];
+        recvcounts[rank_list[i]] = r_lens[i];
     }
     if (isagg) {
-        recvcounts[0] = r_lens[0];
-        rdispls[0] = 0;
-        for ( i = 1; i < procs; ++i ){
-            recvcounts[i] = r_lens[i];
-            rdispls[i] = rdispls[i-1] + r_lens[i-1];
+        for ( i = 0; i < procs; ++i ){
+            sendcounts[i] = s_len;
+            sdispls[i] = i * s_len * sizeof(char);
         }
     } else {
-        memset(recvcounts, 0, sizeof(int) * procs);
-        memset(rdispls, 0, sizeof(int) * procs);
+        memset(sendcounts, 0, sizeof(int) * procs);
+        memset(sdispls, 0, sizeof(int) * procs);
     }
 
     dtypes = (MPI_Datatype*) malloc(procs * sizeof(MPI_Datatype));
@@ -258,6 +259,7 @@ int many_to_all_pairwise(int rank, int isagg, int procs, int cb_nodes, int data_
         pof2 = 1;
     else
         pof2 = 0;
+
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
     for ( m = 0; m < ntimes; ++m ){
@@ -272,7 +274,7 @@ int many_to_all_pairwise(int rank, int isagg, int procs, int cb_nodes, int data_
             }
             src_index = -1;
             for ( j = 0; j < cb_nodes; ++j ){
-                if (rank_list[j] == dst) {
+                if (rank_list[j] == src) {
                     src_index = j;
                     break;
                 }
@@ -301,7 +303,7 @@ int many_to_all_pairwise(int rank, int isagg, int procs, int cb_nodes, int data_
     free(sendcounts);
     free(recvcounts);
 
-    clean_all_to_many(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+    clean_many_to_all(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
     return 0;
 
 }
@@ -1392,7 +1394,7 @@ int main(int argc, char **argv){
         }
 
         if (method == 0 || method == 10){
-            all_to_many_pairwise(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
+            many_to_all_pairwise(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, "many_to_all_pairwise.csv", "Many to all pairwise", timer1, max_timer1);
