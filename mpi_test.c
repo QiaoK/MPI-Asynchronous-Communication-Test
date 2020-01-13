@@ -249,7 +249,6 @@ int many_to_all_pairwise(int rank, int isagg, int procs, int cb_nodes, int data_
     dtypes = (MPI_Datatype*) malloc(procs * sizeof(MPI_Datatype));
     for (i=0; i<procs; i++) dtypes[i] = MPI_BYTE;
 
-    MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
 
 
@@ -354,7 +353,7 @@ int many_to_all_benchmark(int rank, int isagg, int procs, int cb_nodes, int data
         memset(sendcounts, 0, sizeof(int) * procs);
         memset(sdispls, 0, sizeof(int) * procs);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+
     total_start = MPI_Wtime();
 
     if (isagg){
@@ -437,7 +436,6 @@ int all_to_many_pairwise(int rank, int isagg, int procs, int cb_nodes, int data_
     dtypes = (MPI_Datatype*) malloc(procs * sizeof(MPI_Datatype));
     for (i=0; i<procs; i++) dtypes[i] = MPI_BYTE;
 
-    MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
 
 
@@ -542,7 +540,6 @@ int all_to_many_benchmark(int rank, int isagg, int procs, int cb_nodes, int data
     dtypes = (MPI_Datatype*) malloc(procs * sizeof(MPI_Datatype));
     for (i=0; i<procs; i++) dtypes[i] = MPI_BYTE;
 
-    MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
 
     if (isagg){
@@ -598,8 +595,6 @@ int many_to_all_half_sync(int rank, int isagg, int procs, int cb_nodes, int data
     }
 
     stride = (procs + cb_nodes - 1) / cb_nodes;
-
-    MPI_Barrier(MPI_COMM_WORLD);
 
     total_start = MPI_Wtime();
 
@@ -657,7 +652,6 @@ int all_to_many_half_sync(int rank, int isagg, int procs, int cb_nodes, int data
         comm_size = cb_nodes;
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
 
     //steps = (procs + comm_size - 1) / comm_size;
@@ -720,7 +714,6 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
         comm_size = cb_nodes;
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
 
     //steps = (procs + comm_size - 1) / comm_size;
@@ -777,8 +770,6 @@ int many_to_all_balanced_boundary(int rank, int isagg, int procs, int cb_nodes, 
 
     stride = (procs + cb_nodes - 1) / cb_nodes;
 
-    MPI_Barrier(MPI_COMM_WORLD);
-
     total_start = MPI_Wtime();
 
     for ( k = 0; k < procs; k+=comm_size ){
@@ -833,8 +824,6 @@ int many_to_all_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
     if (comm_size > procs){
         comm_size = procs;
     }
-
-    MPI_Barrier(MPI_COMM_WORLD);
 
     total_start = MPI_Wtime();
 
@@ -892,7 +881,6 @@ int all_to_many_sync(int rank, int isagg, int procs, int cb_nodes, int data_size
         comm_size = cb_nodes;
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
 
     //steps = (procs + comm_size - 1) / comm_size;
@@ -971,7 +959,6 @@ int all_to_many(int rank, int isagg, int procs, int cb_nodes, int data_size, int
 
     prepare_all_to_many_data(&send_buf, &recv_buf, &status, &requests, &myindex, &s_len, &r_lens, rank, procs, isagg, cb_nodes, rank_list, data_size, iter);
 
-    MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
     if (comm_size >= procs){
         // If the maximum communication size is greater than the number of processes, we just run many-to-all communication directly.
@@ -1047,7 +1034,6 @@ int many_to_all_interleaved(int rank, int isagg, int procs, int cb_nodes, int da
 
     prepare_many_to_all_data(&send_buf, &recv_buf, &status, &requests, &myindex, &s_len, &r_lens, rank, procs, isagg, cb_nodes, rank_list, data_size, iter);
 
-    MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
     if ( comm_size >= procs ){
         j = 0;
@@ -1090,7 +1076,6 @@ int many_to_all(int rank, int isagg, int procs, int cb_nodes, int data_size, int
 
     prepare_many_to_all_data(&send_buf, &recv_buf, &status, &requests, &myindex, &s_len, &r_lens, rank, procs, isagg, cb_nodes, rank_list, data_size, iter);
 
-    MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
     if ( comm_size >= procs ){
         j = 0;
