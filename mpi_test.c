@@ -36,13 +36,26 @@ usage(char *argv0)
     "Usage: %s [OPTION]... [FILE]...\n"
     "       [-h] Print help\n"
     "       [-a] number of aggregators (in the context of ROMIO)\n"
+    "       [-p] number of processes per node (does not really matter)\n"  
     "       [-d] data size\n"
     "       [-c] maximum communication size\n"
-    "       [-i] number of iteration\n"
+    "       [-i] number of experiments (MPI barrier between experiments)\n"
+    "       [-k] number of iteration (run methods many times, there is no sync between individual runs)\n"
     "       [-m] method\n"
-    "           0: Both 1 and 2\n"
-    "           1: All processes to c receivers\n"
-    "           2: c processes to all processes\n";
+    "           0: All experiments\n"
+    "           1: All to many without ordering (all-to-many)\n"
+    "           2: Many to all without ordering (many-to-all)\n"
+    "           3: All to many with ordering (all-to-many)\n"
+    "           4: Many to all with ordering (many-to-all)\n"
+    "           5: Many to all with alltoallw (many-to-all)\n"
+    "           6: All to many sync (all-to-many sync)\n"
+    "           7: All to many half sync (all-to-many half sync)\n"
+    "           8: All to many with alltoallw (all-to-many benchmark)\n"
+    "           9: All to many pairwise (all-to-many pairwise)\n"
+    "           10: Many to all pairwise (many-to-all pairwise)\n"
+    "           11: Many to all half sync (many-to-all half sync)\n"
+    "           12: Many to all half sync2 (many-to-all half sync2)\n"
+    ;
     fprintf(stderr, help, argv0);
 }
 
