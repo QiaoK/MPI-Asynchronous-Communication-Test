@@ -248,7 +248,7 @@ int many_to_all_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
     sendcounts = (int*) malloc(sizeof(int) * procs);
     rdispls = (int*) malloc(sizeof(int) * procs);
     recvcounts = (int*) malloc(sizeof(int) * procs);
-    recv_buf2 = (int*) malloc(sizeof(int) * procs);
+    recv_buf2 = (char**) malloc(sizeof(char*) * procs);
 
     memset(rdispls, 0, sizeof(int) * procs);
     memset(recvcounts, 0, sizeof(int) * procs);
