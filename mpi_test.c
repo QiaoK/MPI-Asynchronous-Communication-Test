@@ -235,7 +235,7 @@ int all_to_many_alltoall_translate(int **sdispls, int **rdispls, int **sendcount
     rdispls[0][rank_list[0]] = 0;
     recvcounts[0][rank_list[0]] = r_lens[0];
     for ( i = 1; i < cb_nodes; ++i ){
-        rdispls[0][rank_list[i]] = rdisplsp[0][rank_list[i-1]] + r_lens[i-1];
+        rdispls[0][rank_list[i]] = rdispls[0][rank_list[i-1]] + r_lens[i-1];
         recvcounts[0][rank_list[i]] = r_lens[i];
     }
     if (isagg) {
