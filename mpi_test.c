@@ -282,7 +282,7 @@ int many_to_all_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
     total_start = MPI_Wtime();
 
     for ( m = 0; m < ntimes; ++m ){
-        collective_write(rank, procs, procs_node, nrecvs, local_ranks, global_receivers, process_node_list, recvcounts, sendcounts, recv_buf, send_buf2, iter, MPI_COMM_WORLD);
+        collective_write(rank, procs, procs_node, nrecvs, local_ranks, global_receivers, process_node_list, recvcounts, sendcounts, recv_buf2, send_buf, iter, MPI_COMM_WORLD);
     }
 
     timer->total_time += MPI_Wtime() - total_start;
