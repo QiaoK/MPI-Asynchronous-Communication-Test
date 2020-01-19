@@ -589,9 +589,6 @@ int many_to_all_benchmark(int rank, int isagg, int procs, int cb_nodes, int data
     MPI_Request *requests;
     MPI_Datatype *dtypes;
 
-    dtypes = (MPI_Datatype*) malloc(procs * sizeof(MPI_Datatype));
-    for (i=0; i<procs; i++) dtypes[i] = MPI_BYTE;
-
     timer->post_request_time = 0;
     timer->recv_wait_all_time = 0;
     timer->send_wait_all_time = 0;
@@ -764,7 +761,7 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
 
 int all_to_many_benchmark(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter, int ntimes){
     double total_start;
-    int i, m, myindex = 0, s_len, *r_lens;
+    int m, myindex = 0, s_len, *r_lens;
     char **send_buf;
     char **recv_buf = NULL;
     int *sendcounts = NULL, *recvcounts = NULL, *sdispls = NULL, *rdispls = NULL;
