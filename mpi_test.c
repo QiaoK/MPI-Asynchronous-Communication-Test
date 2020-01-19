@@ -224,7 +224,7 @@ int clean_all_to_many(int rank, int procs, int cb_nodes, int *rank_list, int myi
 
 int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, int procs_node, Timer *timer, int iter, int ntimes){
     double total_start;
-    int i, j, m, myindex = 0, s_len, *r_lens;
+    int i, m, myindex = 0, s_len, *r_lens;
     int *node_size, *local_ranks, *global_receivers, *process_node_list, nrecvs/*, is_aggregator_new, local_aggregator_size, *aggregator_local_ranks, *process_aggregator_list, *local_aggregators, nprocs_aggregator*/;
     char **send_buf;
     char **recv_buf = NULL;
