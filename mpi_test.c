@@ -35,7 +35,7 @@ typedef struct{
     double recv_wait_all_time;
     double total_time;
 }Timer;
-/*
+
 static void
 usage(char *argv0)
 {
@@ -65,7 +65,7 @@ usage(char *argv0)
     ;
     fprintf(stderr, help, argv0);
 }
-*/
+
 int fill_buffer(int rank, char *buf, int size, int seed, int iter){
     MPI_Count i;
     for ( i = 0; i < size; ++i ){
@@ -222,7 +222,7 @@ int clean_all_to_many(int rank, int procs, int cb_nodes, int *rank_list, int myi
     return 0;
 }
 
-int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, int proc_node, Timer *timer, int iter, int ntimes){
+int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, int procs_node, Timer *timer, int iter, int ntimes){
     double total_start;
     int i, j, m, myindex = 0, s_len, *r_lens;
     int *node_size, *local_ranks, *global_receivers, *process_node_list, nrecvs/*, is_aggregator_new, local_aggregator_size, *aggregator_local_ranks, *process_aggregator_list, *local_aggregators, nprocs_aggregator*/;
@@ -270,9 +270,9 @@ int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
     dtypes = (MPI_Datatype*) malloc(procs * sizeof(MPI_Datatype));
     for (i=0; i<procs; i++) dtypes[i] = MPI_BYTE;
 
-    static_node_assignment(rank, procs, 0, &proc_node, &nrecvs, &node_size, &local_ranks, &global_receivers, &process_node_list);
+    static_node_assignment(rank, procs, 0, &procs_node, &nrecvs, &node_size, &local_ranks, &global_receivers, &process_node_list);
     //aggregator_meta_information(rank, process_node_list, procs, nrecvs, cb_nodes, rank_list, 1, &is_aggregator_new, &local_aggregator_size, &local_aggregators, &nprocs_aggregator, &aggregator_local_ranks, &process_aggregator_list, 0);
-    collective_write(rank, nprocs, nprocs_node, nrecvs, local_ranks, global_receivers, process_node_list, recv_size, send_size, recv_buf, send_buf, iter, comm);
+    collective_write(rank, procs, procs_node, nrecvs, local_ranks, global_receivers, process_node_list, recv_size, send_size, recv_buf, send_buf, iter, comm);
 
     comm_size = procs;
 
