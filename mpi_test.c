@@ -223,6 +223,7 @@ int clean_all_to_many(int rank, int procs, int cb_nodes, int *rank_list, int myi
 }
 
 int all_to_many_alltoall_translate(int **sdispls, int **rdispls, int **sendcounts, int **recvcounts, MPI_Datatype **dtypes, int *rank_list, int isagg, int cb_nodes, int procs, int s_len, int* r_lens){
+    int i;
     *sdispls = (int*) malloc(sizeof(int) * procs);
     *sendcounts = (int*) malloc(sizeof(int) * procs);
     *rdispls = (int*) malloc(sizeof(int) * procs);
