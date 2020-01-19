@@ -1196,13 +1196,14 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
     if (myrank==local_ranks[0]){
         // We must create a buffer that can be used to reorder messages. Messages received from individual node proxy process is ordered. However, the ranks are not necessarily ordered (depending on configuration). We have to pack the messages again to align with the request of individual local process.
         // Pack messages to be sent to a local process.
-        ptr = local_buf;
         if (total_recv_size){
+            //ptr = local_buf;
             for (w=0; w<nprocs; w++){
-                memcpy(ptr,ptrs[process_node_list[w]],sizeof(char)*recv_size[w]);
+                memcpy(recv_buf[i],ptrs[process_node_list[w]],sizeof(char)*recv_size[w]);
+                //memcpy(ptr,ptrs[process_node_list[w]],sizeof(char)*recv_size[w]);
                 // ptrs[process_node_list[w]] is in order, we can shift the pointer to the next location and access its content.
                 ptrs[process_node_list[w]] += recv_size[w];
-                ptr += recv_size[w];
+                //ptr += recv_size[w];
             }
             //memcpy(local_buf,aggregate_buf,sizeof(char)*total_recv_size);
         }
@@ -1252,7 +1253,7 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
     #endif
     /* Aggregator finally copy the messages received from local proxy (in order) to the target recv buffer.*/
 
-    if (total_recv_size>0){
+    if (myrank!=local_ranks[0]&&total_recv_size){
         ptr = local_buf;
         for (i=0; i<nprocs; i++){
             if (recv_size[i]){
@@ -1261,6 +1262,7 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
             }
         }
     }
+
     if (myrank==local_ranks[0]){
         ADIOI_Free(global_s_lens);
         ADIOI_Free(s_lens); /*r_lens is freed together*/
