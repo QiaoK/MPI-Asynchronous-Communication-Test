@@ -21,6 +21,13 @@
     } \
 }
 #define MAP_DATA(a,b,c,d) ((a)*7+(b)*3+(c)*5+11*((a)-22)*((b)-56)+(d))
+
+extern int static_node_assignment(int rank, int nprocs, int type, int *nprocs_node,int *nrecvs, int** node_size, int** local_ranks, int** global_receivers, int **process_node_list);
+
+extern int aggregator_meta_information(int rank, int *process_node_list, int nprocs, int nrecvs, int global_aggregator_size, int *global_aggregators, int co, int* is_aggregator_new, int* local_aggregator_size, int **local_aggregators, int* nprocs_aggregator, int **aggregator_local_ranks, int **process_aggregator_list, int mode);
+
+extern int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* local_ranks, int* global_receivers, int *process_node_list, int *recv_size, int *send_size, char **recv_buf, char **send_buf, int iter, MPI_Comm comm);
+
 int err;
 typedef struct{
     double post_request_time;
@@ -213,6 +220,77 @@ int clean_all_to_many(int rank, int procs, int cb_nodes, int *rank_list, int myi
     myindex = 0;
     iter = 0;
     return 0;
+}
+
+int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, int proc_node, Timer *timer, int iter, int ntimes){
+    double total_start;
+    int i, j, m, myindex = 0, s_len, *r_lens;
+    int *node_size, *local_ranks, *global_receivers, *process_node_list, nrecvs/*, is_aggregator_new, local_aggregator_size, *aggregator_local_ranks, *process_aggregator_list, *local_aggregators, nprocs_aggregator*/;
+    char **send_buf;
+    char **recv_buf = NULL;
+    int *sendcounts = NULL, *recvcounts = NULL, *sdispls = NULL, *rdispls = NULL;
+    MPI_Status *status;
+    MPI_Request *requests;
+    MPI_Datatype *dtypes;
+
+    timer->post_request_time = 0;
+    timer->recv_wait_all_time = 0;
+    timer->send_wait_all_time = 0;
+    timer->total_time = 0;
+
+    prepare_all_to_many_data(&send_buf, &recv_buf, &status, &requests, &myindex, &s_len, &r_lens, rank, procs, isagg, cb_nodes, rank_list, data_size, iter);
+
+    if (comm_size > procs){
+        comm_size = procs;
+    }
+
+    sdispls = (int*) malloc(sizeof(int) * procs);
+    sendcounts = (int*) malloc(sizeof(int) * procs);
+    rdispls = (int*) malloc(sizeof(int) * procs);
+    recvcounts = (int*) malloc(sizeof(int) * procs);
+
+    memset(sdispls, 0, sizeof(int) * procs);
+    memset(sendcounts, 0, sizeof(int) * procs);
+    for ( i = 0; i < cb_nodes; ++i ){
+        sdispls[rank_list[i]] = i * s_len * sizeof(char);
+        sendcounts[rank_list[i]] = s_len;
+    }
+    if (isagg) {
+        recvcounts[0] = r_lens[0];
+        rdispls[0] = 0;
+        for ( i = 1; i < procs; ++i ){
+            recvcounts[i] = r_lens[i];
+            rdispls[i] = rdispls[i-1] + r_lens[i-1];
+        }
+    } else {
+        memset(recvcounts, 0, sizeof(int) * procs);
+        memset(rdispls, 0, sizeof(int) * procs);
+    }
+
+    dtypes = (MPI_Datatype*) malloc(procs * sizeof(MPI_Datatype));
+    for (i=0; i<procs; i++) dtypes[i] = MPI_BYTE;
+
+    static_node_assignment(rank, procs, 0, &proc_node, &nrecvs, &node_size, &local_ranks, &global_receivers, &process_node_list);
+    //aggregator_meta_information(rank, process_node_list, procs, nrecvs, cb_nodes, rank_list, 1, &is_aggregator_new, &local_aggregator_size, &local_aggregators, &nprocs_aggregator, &aggregator_local_ranks, &process_aggregator_list, 0);
+    collective_write(rank, nprocs, nprocs_node, nrecvs, local_ranks, global_receivers, process_node_list, recv_size, send_size, recv_buf, send_buf, iter, comm);
+
+    comm_size = procs;
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    total_start = MPI_Wtime();
+    for (m = 0; m < ntimes; ++m){
+    }
+    timer->total_time += MPI_Wtime() - total_start;
+
+    free(dtypes);
+    free(sdispls);
+    free(rdispls);
+    free(sendcounts);
+    free(recvcounts);
+
+    clean_all_to_many(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+    return 0;
+
 }
 
 int many_to_all_pairwise(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter, int ntimes){
