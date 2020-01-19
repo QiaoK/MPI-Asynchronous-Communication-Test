@@ -21,7 +21,7 @@
 
 
 /*----< usage() >------------------------------------------------------------*/
-/*
+#if DEBUG==1
 static void
 usage()
 {
@@ -34,7 +34,7 @@ usage()
     "       [-t] test type (0-2)\n";
     printf("%s",help);
 }
-*/
+#endif
 
 int test_correctness(int rank, int nprocs, int* recv_size, char **recv_buf){
     int i,j;
