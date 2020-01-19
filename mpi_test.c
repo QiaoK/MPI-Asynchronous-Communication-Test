@@ -343,6 +343,10 @@ int many_to_all_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
 
     timer->total_time += MPI_Wtime() - total_start;
 
+    free(node_size);
+    free(local_ranks);
+    free(global_receivers);
+    free(process_node_list);
     free(recv_buf2);
     many_to_all_alltoall_clean(sdispls, rdispls, sendcounts, recvcounts, dtypes);
 
@@ -394,6 +398,11 @@ int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
     timer->total_time += MPI_Wtime() - total_start;
 
     all_to_many_alltoall_clean(sdispls, rdispls, sendcounts, recvcounts, dtypes);
+
+    free(node_size);
+    free(local_ranks);
+    free(global_receivers);
+    free(process_node_list);
     free(send_buf2);
 
     clean_all_to_many(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
