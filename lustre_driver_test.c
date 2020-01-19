@@ -21,6 +21,7 @@
 
 
 /*----< usage() >------------------------------------------------------------*/
+/*
 static void
 usage()
 {
@@ -33,7 +34,7 @@ usage()
     "       [-t] test type (0-2)\n";
     printf("%s",help);
 }
-
+*/
 
 int test_correctness(int rank, int nprocs, int* recv_size, char **recv_buf){
     int i,j;
@@ -1002,7 +1003,9 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
         memcpy(local_lens+nprocs,recv_size,sizeof(int)*nprocs);
         MPI_Isend(local_lens, 2 * nprocs, MPI_INT, local_ranks[0], myrank + local_ranks[0] + 100 * iter, comm, &intra_req[j++]);
     }
-    MPI_Waitall(j, intra_req, intra_sts);
+    if (j) {
+        MPI_Waitall(j, intra_req, intra_sts);
+    }
     #if DEBUG==1
     MPI_Barrier(comm);
     if (myrank==0){
@@ -1087,7 +1090,9 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
             MPI_Issend(local_buf, total_send_size, MPI_BYTE, local_ranks[0], myrank + local_ranks[0] + 100 * iter, comm, &intra_req[j++]);
         }
     }
-    MPI_Waitall(j, intra_req, intra_sts);
+    if (j) {
+        MPI_Waitall(j, intra_req, intra_sts);
+    }
     /* End of intra-group gather*/
     #if DEBUG==1
     MPI_Barrier(comm);
@@ -1168,7 +1173,9 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
             ptrs[i] = r_buf[i];
         }
         // wait for all irecv/isend to complete
-        MPI_Waitall(j, req, sts);
+        if (j){
+            MPI_Waitall(j, req, sts);
+        }
     }
     /* End of inter-node exchange of messages*/
     #if DEBUG==1
@@ -1233,7 +1240,9 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
             MPI_Irecv(local_buf, total_recv_size, MPI_BYTE, local_ranks[0], myrank + local_ranks[0] + 100 * iter, comm, &intra_req[j++]);
         }
     }
-    MPI_Waitall(j, intra_req, intra_sts);
+    if (j) {
+        MPI_Waitall(j, intra_req, intra_sts);
+    }
     #if DEBUG==1
     MPI_Barrier(comm);
     if (myrank==0){
@@ -1241,6 +1250,7 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
     }
     #endif
     /* Aggregator finally copy the messages received from local proxy (in order) to the target recv buffer.*/
+
     if (total_recv_size>0){
         ptr = local_buf;
         for (i=0; i<nprocs; i++){
@@ -1379,7 +1389,7 @@ int reorder_ranklist(int *process_node_list, int *ranklist, int cb_nodes, int nr
     return 0;
 }
 
-#if DEBUG==9999
+#if DEBUG==0
 /*----< main() >-------------------------------------------------------------*/
 int main(int argc, char** argv){
     int rank, nprocs, i, blocklen = 0, ntimes = 0, type = 0, rank_assignment = 0, co = 0;
