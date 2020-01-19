@@ -1199,7 +1199,7 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
         if (total_recv_size){
             //ptr = local_buf;
             for (w=0; w<nprocs; w++){
-                memcpy(recv_buf[i],ptrs[process_node_list[w]],sizeof(char)*recv_size[w]);
+                memcpy(recv_buf[w],ptrs[process_node_list[w]],sizeof(char)*recv_size[w]);
                 //memcpy(ptr,ptrs[process_node_list[w]],sizeof(char)*recv_size[w]);
                 // ptrs[process_node_list[w]] is in order, we can shift the pointer to the next location and access its content.
                 ptrs[process_node_list[w]] += recv_size[w];
