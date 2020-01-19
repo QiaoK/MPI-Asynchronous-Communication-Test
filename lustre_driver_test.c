@@ -1251,7 +1251,8 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
         printf("finished local message delivery\n");
     }
     #endif
-    /* Aggregator finally copy the messages received from local proxy (in order) to the target recv buffer.*/
+    /* Aggregator finally copy the messages received from local proxy (in order) to the target recv buffer.
+       Note if this process is an aggregator, then the copy has done at memory rearrangement already.*/
 
     if (myrank!=local_ranks[0]&&total_recv_size){
         ptr = local_buf;
