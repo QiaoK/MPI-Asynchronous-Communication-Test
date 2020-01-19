@@ -1389,7 +1389,7 @@ int reorder_ranklist(int *process_node_list, int *ranklist, int cb_nodes, int nr
     return 0;
 }
 
-#if DEBUG==0
+#if DEBUG==1
 /*----< main() >-------------------------------------------------------------*/
 int main(int argc, char** argv){
     int rank, nprocs, i, blocklen = 0, ntimes = 0, type = 0, rank_assignment = 0, co = 0;
