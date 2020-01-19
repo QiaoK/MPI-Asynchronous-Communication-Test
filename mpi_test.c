@@ -35,7 +35,7 @@ typedef struct{
     double recv_wait_all_time;
     double total_time;
 }Timer;
-
+/*
 static void
 usage(char *argv0)
 {
@@ -65,7 +65,7 @@ usage(char *argv0)
     ;
     fprintf(stderr, help, argv0);
 }
-
+*/
 int fill_buffer(int rank, char *buf, int size, int seed, int iter){
     MPI_Count i;
     for ( i = 0; i < size; ++i ){
