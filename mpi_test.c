@@ -252,7 +252,7 @@ int all_to_many_alltoall_translate(int **sdispls, int **rdispls, int **sendcount
     return 0;
 }
 
-int all_to_many_alltoall_clean(int **sdispls, int **rdispls, int **sendcounts, int **recvcounts, MPI_Datatype **dtypes){
+int all_to_many_alltoall_clean(int *sdispls, int *rdispls, int *sendcounts, int *recvcounts, MPI_Datatype *dtypes){
     free(dtypes);
     free(sdispls);
     free(rdispls);
