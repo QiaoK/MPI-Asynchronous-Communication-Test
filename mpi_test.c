@@ -222,6 +222,45 @@ int clean_all_to_many(int rank, int procs, int cb_nodes, int *rank_list, int myi
     return 0;
 }
 
+int all_to_many_alltoall_translate(int **sdispls, int **rdispls, int **sendcounts, int **recvcounts, MPI_Datatype **dtypes, int *rank_list, int isagg, int cb_nodes, int procs, int s_len, int* r_lens){
+    *sdispls = (int*) malloc(sizeof(int) * procs);
+    *sendcounts = (int*) malloc(sizeof(int) * procs);
+    *rdispls = (int*) malloc(sizeof(int) * procs);
+    *recvcounts = (int*) malloc(sizeof(int) * procs);
+
+    memset(*rdispls, 0, sizeof(int) * procs);
+    memset(*recvcounts, 0, sizeof(int) * procs);
+
+    rdispls[0][rank_list[0]] = 0;
+    recvcounts[0][rank_list[0]] = r_lens[0];
+    for ( i = 1; i < cb_nodes; ++i ){
+        rdispls[0][rank_list[i]] = rdisplsp[0][rank_list[i-1]] + r_lens[i-1];
+        recvcounts[0][rank_list[i]] = r_lens[i];
+    }
+    if (isagg) {
+        for ( i = 0; i < procs; ++i ){
+            sendcounts[0][i] = s_len;
+            sdispls[0][i] = i * s_len * sizeof(char);
+        }
+    } else {
+        memset(*sendcounts, 0, sizeof(int) * procs);
+        memset(*sdispls, 0, sizeof(int) * procs);
+    }
+
+    *dtypes = (MPI_Datatype*) malloc(procs * sizeof(MPI_Datatype));
+    for (i=0; i<procs; i++) dtypes[0][i] = MPI_BYTE;
+    return 0;
+}
+
+int all_to_many_alltoall_clean(int **sdispls, int **rdispls, int **sendcounts, int **recvcounts, MPI_Datatype **dtypes){
+    free(dtypes);
+    free(sdispls);
+    free(rdispls);
+    free(sendcounts);
+    free(recvcounts);
+    return 0;
+}
+
 int many_to_all_tam(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, int procs_node, Timer *timer, int iter, int ntimes){
     double total_start;
     int i, m, myindex = 0, s_len, *r_lens;
@@ -244,39 +283,15 @@ int many_to_all_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
         comm_size = procs;
     }
 
-    sdispls = (int*) malloc(sizeof(int) * procs);
-    sendcounts = (int*) malloc(sizeof(int) * procs);
-    rdispls = (int*) malloc(sizeof(int) * procs);
-    recvcounts = (int*) malloc(sizeof(int) * procs);
     recv_buf2 = (char**) malloc(sizeof(char*) * procs);
 
-    memset(rdispls, 0, sizeof(int) * procs);
-    memset(recvcounts, 0, sizeof(int) * procs);
-
-    rdispls[rank_list[0]] = 0;
-    recvcounts[rank_list[0]] = r_lens[0];
-    recv_buf2[rank_list[0]] = recv_buf[0];
-    for ( i = 1; i < cb_nodes; ++i ){
+    for ( i = 0; i < cb_nodes; ++i ){
         recv_buf2[rank_list[i]] = recv_buf[i];
-        rdispls[rank_list[i]] = rdispls[rank_list[i-1]] + r_lens[i-1];
-        recvcounts[rank_list[i]] = r_lens[i];
     }
-    if (isagg) {
-        for ( i = 0; i < procs; ++i ){
-            sendcounts[i] = s_len;
-            sdispls[i] = i * s_len * sizeof(char);
-        }
-    } else {
-        memset(sendcounts, 0, sizeof(int) * procs);
-        memset(sdispls, 0, sizeof(int) * procs);
-    }
-
-    dtypes = (MPI_Datatype*) malloc(procs * sizeof(MPI_Datatype));
-    for (i=0; i<procs; i++) dtypes[i] = MPI_BYTE;
 
     static_node_assignment(rank, procs, 0, &procs_node, &nrecvs, &node_size, &local_ranks, &global_receivers, &process_node_list);
 
-    comm_size = procs;
+    all_to_many_alltoall_translate(&sdispls, &rdispls, &sendcounts, &recvcounts, &dtypes, rank_list, isagg, cb_nodes, procs, s_len, r_lens);
 
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
@@ -287,12 +302,8 @@ int many_to_all_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
 
     timer->total_time += MPI_Wtime() - total_start;
 
-    free(dtypes);
-    free(sdispls);
-    free(rdispls);
-    free(sendcounts);
-    free(recvcounts);
     free(recv_buf2);
+    all_to_many_alltoall_clean(sdispls, rdispls, sendcounts, recvcounts, dtypes);
 
     clean_many_to_all(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
     return 0;
