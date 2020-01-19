@@ -1738,6 +1738,14 @@ int main(int argc, char **argv){
             }
         }
 
+        if (method == 0 || method == 15){
+            all_to_many_tam(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, proc_node, &timer1, i, ntimes);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+            if (rank == 0){
+                summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, "all_to_many_tam.csv", "All to many TAM", timer1, max_timer1);
+            }
+        }
+
         if (rank == 0){
             printf("| --------------------------------------\n");
         }
