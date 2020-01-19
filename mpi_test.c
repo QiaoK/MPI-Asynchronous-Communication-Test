@@ -581,7 +581,7 @@ int all_to_many_pairwise(int rank, int isagg, int procs, int cb_nodes, int data_
 
 int many_to_all_benchmark(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter, int ntimes){
     double total_start;
-    int i, m, myindex = 0, s_len, *r_lens;
+    int m, myindex = 0, s_len, *r_lens;
     char **send_buf;
     char **recv_buf = NULL;
     int *sendcounts = NULL, *recvcounts = NULL, *sdispls = NULL, *rdispls = NULL;
