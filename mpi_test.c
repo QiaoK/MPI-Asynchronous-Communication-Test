@@ -226,7 +226,7 @@ int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
     double total_start;
     int i, m, myindex = 0, s_len, *r_lens;
     int *node_size, *local_ranks, *global_receivers, *process_node_list, nrecvs/*, is_aggregator_new, local_aggregator_size, *aggregator_local_ranks, *process_aggregator_list, *local_aggregators, nprocs_aggregator*/;
-    char **send_buf;
+    char **send_buf, **send_buf2;
     char **recv_buf = NULL;
     int *sendcounts = NULL, *recvcounts = NULL, *sdispls = NULL, *rdispls = NULL;
     MPI_Status *status;
@@ -248,10 +248,12 @@ int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
     sendcounts = (int*) malloc(sizeof(int) * procs);
     rdispls = (int*) malloc(sizeof(int) * procs);
     recvcounts = (int*) malloc(sizeof(int) * procs);
+    send_buf2 = (char**) malloc(sizeof(char*) * procs);
 
     memset(sdispls, 0, sizeof(int) * procs);
     memset(sendcounts, 0, sizeof(int) * procs);
     for ( i = 0; i < cb_nodes; ++i ){
+        send_buf2[i] = send_buf[rank_list[i]];
         sdispls[rank_list[i]] = i * s_len * sizeof(char);
         sendcounts[rank_list[i]] = s_len;
     }
@@ -272,7 +274,7 @@ int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
 
     static_node_assignment(rank, procs, 0, &procs_node, &nrecvs, &node_size, &local_ranks, &global_receivers, &process_node_list);
     //aggregator_meta_information(rank, process_node_list, procs, nrecvs, cb_nodes, rank_list, 1, &is_aggregator_new, &local_aggregator_size, &local_aggregators, &nprocs_aggregator, &aggregator_local_ranks, &process_aggregator_list, 0);
-    //collective_write(rank, procs, procs_node, nrecvs, local_ranks, global_receivers, process_node_list, recvcounts, sendcounts, recv_buf, send_buf, iter, MPI_COMM_WORLD);
+    collective_write(rank, procs, procs_node, nrecvs, local_ranks, global_receivers, process_node_list, recvcounts, sendcounts, recv_buf, send_buf, iter, MPI_COMM_WORLD);
 
     comm_size = procs;
 
@@ -287,6 +289,7 @@ int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
     free(rdispls);
     free(sendcounts);
     free(recvcounts);
+    free(send_buf2);
 
     clean_all_to_many(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
     return 0;
