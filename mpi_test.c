@@ -272,7 +272,7 @@ int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
 
     static_node_assignment(rank, procs, 0, &procs_node, &nrecvs, &node_size, &local_ranks, &global_receivers, &process_node_list);
     //aggregator_meta_information(rank, process_node_list, procs, nrecvs, cb_nodes, rank_list, 1, &is_aggregator_new, &local_aggregator_size, &local_aggregators, &nprocs_aggregator, &aggregator_local_ranks, &process_aggregator_list, 0);
-    collective_write(rank, procs, procs_node, nrecvs, local_ranks, global_receivers, process_node_list, rcounts, scounts, recv_buf, send_buf, iter, MPI_COMM_WORLD);
+    collective_write(rank, procs, procs_node, nrecvs, local_ranks, global_receivers, process_node_list, recvcounts, sendcounts, recv_buf, send_buf, iter, MPI_COMM_WORLD);
 
     comm_size = procs;
 
