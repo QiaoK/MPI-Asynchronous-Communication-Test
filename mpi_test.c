@@ -222,6 +222,83 @@ int clean_all_to_many(int rank, int procs, int cb_nodes, int *rank_list, int myi
     return 0;
 }
 
+int many_to_all_tam(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, int procs_node, Timer *timer, int iter, int ntimes){
+    double total_start;
+    int i, m, myindex = 0, s_len, *r_lens;
+    int *node_size, *local_ranks, *global_receivers, *process_node_list, nrecvs;
+    char **send_buf, **recv_buf2;
+    char **recv_buf = NULL;
+    int *sendcounts = NULL, *recvcounts = NULL, *sdispls = NULL, *rdispls = NULL;
+    MPI_Status *status;
+    MPI_Request *requests;
+    MPI_Datatype *dtypes;
+
+    timer->post_request_time = 0;
+    timer->recv_wait_all_time = 0;
+    timer->send_wait_all_time = 0;
+    timer->total_time = 0;
+
+    prepare_many_to_all_data(&send_buf, &recv_buf, &status, &requests, &myindex, &s_len, &r_lens, rank, procs, isagg, cb_nodes, rank_list, data_size, iter);
+
+    if (comm_size > procs){
+        comm_size = procs;
+    }
+
+    sdispls = (int*) malloc(sizeof(int) * procs);
+    sendcounts = (int*) malloc(sizeof(int) * procs);
+    rdispls = (int*) malloc(sizeof(int) * procs);
+    recvcounts = (int*) malloc(sizeof(int) * procs);
+    recv_buf2 = (int*) malloc(sizeof(int) * procs);
+
+    memset(rdispls, 0, sizeof(int) * procs);
+    memset(recvcounts, 0, sizeof(int) * procs);
+
+    rdispls[rank_list[0]] = 0;
+    recvcounts[rank_list[0]] = r_lens[0];
+    recv_buf2[rank_list[0]] = recv_buf[0];
+    for ( i = 1; i < cb_nodes; ++i ){
+        recv_buf2[rank_list[i]] = recv_buf[i];
+        rdispls[rank_list[i]] = rdispls[rank_list[i-1]] + r_lens[i-1];
+        recvcounts[rank_list[i]] = r_lens[i];
+    }
+    if (isagg) {
+        for ( i = 0; i < procs; ++i ){
+            sendcounts[i] = s_len;
+            sdispls[i] = i * s_len * sizeof(char);
+        }
+    } else {
+        memset(sendcounts, 0, sizeof(int) * procs);
+        memset(sdispls, 0, sizeof(int) * procs);
+    }
+
+    dtypes = (MPI_Datatype*) malloc(procs * sizeof(MPI_Datatype));
+    for (i=0; i<procs; i++) dtypes[i] = MPI_BYTE;
+
+    static_node_assignment(rank, procs, 0, &procs_node, &nrecvs, &node_size, &local_ranks, &global_receivers, &process_node_list);
+
+    comm_size = procs;
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    total_start = MPI_Wtime();
+
+    for ( m = 0; m < ntimes; ++m ){
+        collective_write(rank, procs, procs_node, nrecvs, local_ranks, global_receivers, process_node_list, recvcounts, sendcounts, recv_buf, send_buf2, iter, MPI_COMM_WORLD);
+    }
+
+    timer->total_time += MPI_Wtime() - total_start;
+
+    free(dtypes);
+    free(sdispls);
+    free(rdispls);
+    free(sendcounts);
+    free(recvcounts);
+    free(recv_buf2);
+
+    clean_many_to_all(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+    return 0;
+
+}
+
 int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, int procs_node, Timer *timer, int iter, int ntimes){
     double total_start;
     int i, m, myindex = 0, s_len, *r_lens;
@@ -274,18 +351,15 @@ int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
 
     static_node_assignment(rank, procs, 0, &procs_node, &nrecvs, &node_size, &local_ranks, &global_receivers, &process_node_list);
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    total_start = MPI_Wtime();
-    for ( m = 0; m < ntimes; ++m ){
-        collective_write(rank, procs, procs_node, nrecvs, local_ranks, global_receivers, process_node_list, recvcounts, sendcounts, recv_buf, send_buf2, iter, MPI_COMM_WORLD);
-    }
-
     comm_size = procs;
 
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
-    for (m = 0; m < ntimes; ++m){
+
+    for ( m = 0; m < ntimes; ++m ){
+        collective_write(rank, procs, procs_node, nrecvs, local_ranks, global_receivers, process_node_list, recvcounts, sendcounts, recv_buf, send_buf2, iter, MPI_COMM_WORLD);
     }
+
     timer->total_time += MPI_Wtime() - total_start;
 
     free(dtypes);
