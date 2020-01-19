@@ -253,7 +253,7 @@ int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
     memset(sdispls, 0, sizeof(int) * procs);
     memset(sendcounts, 0, sizeof(int) * procs);
     for ( i = 0; i < cb_nodes; ++i ){
-        send_buf2[i] = send_buf[rank_list[i]];
+        send_buf2[rank_list[i]] = send_buf[i];
         sdispls[rank_list[i]] = i * s_len * sizeof(char);
         sendcounts[rank_list[i]] = s_len;
     }
