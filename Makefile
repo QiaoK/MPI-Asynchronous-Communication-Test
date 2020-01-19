@@ -1,7 +1,7 @@
 CC=mpicc
 CFLAGS= -Wall -Wextra -O2
 LIBS = -lm
-TEST_OBJS = mpi_test.o
+TEST_OBJS = mpi_test.o lustre_driver_test
 test : $(TEST_OBJS)
 	$(CC) -o $@ $(TEST_OBJS) $(LIBS)
 %.o: %.c
