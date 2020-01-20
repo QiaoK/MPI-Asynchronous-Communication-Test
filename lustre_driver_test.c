@@ -19,6 +19,13 @@
 */
 #define MAP_DATA(a,b,c) (1+(a)*3+(b)*5+(c)*7)
 
+typedef struct{
+    double post_request_time;
+    double send_wait_all_time;
+    double recv_wait_all_time;
+    double total_time;
+}Timer;
+
 
 /*----< usage() >------------------------------------------------------------*/
 #if DEBUG==1
@@ -934,11 +941,12 @@ int collective_write2(int myrank, int nprocs, int nprocs_aggregator, int global_
   Output:
        1. recv_buf : An array of receive buffer pointers (of size nprocs) for this process. It must have the correct messages in the end.
 */
-int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* local_ranks, int* global_receivers, int *process_node_list, int *recv_size, int *send_size, char **recv_buf, char **send_buf, int iter, MPI_Comm comm){
+int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* local_ranks, int* global_receivers, int *process_node_list, int *recv_size, int *send_size, char **recv_buf, char **send_buf, int iter, MPI_Comm comm, Timer *timer){
     char *aggregate_buf = NULL, *local_buf = NULL, *tmp_buf = NULL, *ptr, *ptr2, *s_buf2 = NULL, **r_buf = NULL, **ptrs = NULL;
     int i, j, w, v, temp=0, temp2=0;
     MPI_Request *intra_req, *req = NULL;
     MPI_Status *intra_sts, *sts = NULL;
+    double start;
     int *global_s_lens = NULL, *global_r_lens = NULL, *local_lens = NULL, node_message_size=0, r_rank, node_recv_size=0, *s_lens = NULL, *r_lens = NULL, total_recv_size, total_send_size, aggregate_buffer_size = 0;
     /* Count total message size to be sent/recv from this process. (To be optimized)*/
     total_send_size = 0;
@@ -1004,7 +1012,9 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
         MPI_Isend(local_lens, 2 * nprocs, MPI_INT, local_ranks[0], myrank + local_ranks[0] + 100 * iter, comm, &intra_req[j++]);
     }
     if (j) {
+        start = MPI_Wtime();
         MPI_Waitall(j, intra_req, intra_sts);
+        timer->recv_wait_all_time += MPI_Wtime() - start;
     }
     #if DEBUG==1
     MPI_Barrier(comm);
@@ -1091,7 +1101,9 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
         }
     }
     if (j) {
+        start = MPI_Wtime();
         MPI_Waitall(j, intra_req, intra_sts);
+        timer->recv_wait_all_time += MPI_Wtime() - start;
     }
     /* End of intra-group gather*/
     #if DEBUG==1
@@ -1146,7 +1158,11 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
             }
         }
         /* End of intergroup message size exchange. global_s_lens is an array of size nrecvs (number of nodes) that stores the aggregated message size to be sent to different node from this node. global_r_lens is an array of size nrecvs that stores the message size to be received from all nodes.*/
-        MPI_Waitall(j, req, sts);
+        if (j){
+            start = MPI_Wtime();
+            MPI_Waitall(j, req, sts);
+            timer->send_wait_all_time += MPI_Wtime() - start;
+        }
         j=0;
         // Exchange aggregated messages among receivers
         ptr2=s_buf2;
@@ -1174,7 +1190,9 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
         }
         // wait for all irecv/isend to complete
         if (j){
+            start = MPI_Wtime();
             MPI_Waitall(j, req, sts);
+            timer->start_wait_all_time += MPI_Wtime() - start;
         }
     }
     /* End of inter-node exchange of messages*/
@@ -1243,7 +1261,9 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
         }
     }
     if (j) {
+        start = MPI_Wtime();
         MPI_Waitall(j, intra_req, intra_sts);
+        timer->recv_wait_all_time += MPI_Wtime() - start;
     }
     #if DEBUG==1
     MPI_Barrier(comm);

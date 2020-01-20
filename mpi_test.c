@@ -22,13 +22,6 @@
 }
 #define MAP_DATA(a,b,c,d) ((a)*7+(b)*3+(c)*5+11*((a)-22)*((b)-56)+(d))
 
-extern int static_node_assignment(int rank, int nprocs, int type, int *nprocs_node,int *nrecvs, int** node_size, int** local_ranks, int** global_receivers, int **process_node_list);
-
-extern int aggregator_meta_information(int rank, int *process_node_list, int nprocs, int nrecvs, int global_aggregator_size, int *global_aggregators, int co, int* is_aggregator_new, int* local_aggregator_size, int **local_aggregators, int* nprocs_aggregator, int **aggregator_local_ranks, int **process_aggregator_list, int mode);
-
-extern int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* local_ranks, int* global_receivers, int *process_node_list, int *recv_size, int *send_size, char **recv_buf, char **send_buf, int iter, MPI_Comm comm);
-
-int err;
 typedef struct{
     double post_request_time;
     double send_wait_all_time;
@@ -36,6 +29,14 @@ typedef struct{
     double total_time;
 }Timer;
 
+
+extern int static_node_assignment(int rank, int nprocs, int type, int *nprocs_node,int *nrecvs, int** node_size, int** local_ranks, int** global_receivers, int **process_node_list);
+
+extern int aggregator_meta_information(int rank, int *process_node_list, int nprocs, int nrecvs, int global_aggregator_size, int *global_aggregators, int co, int* is_aggregator_new, int* local_aggregator_size, int **local_aggregators, int* nprocs_aggregator, int **aggregator_local_ranks, int **process_aggregator_list, int mode);
+
+extern int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* local_ranks, int* global_receivers, int *process_node_list, int *recv_size, int *send_size, char **recv_buf, char **send_buf, int iter, MPI_Comm comm, Timer *timer);
+
+int err;
 static void
 usage(char *argv0)
 {
@@ -338,7 +339,7 @@ int many_to_all_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
     total_start = MPI_Wtime();
 
     for ( m = 0; m < ntimes; ++m ){
-        collective_write(rank, procs, procs_node, nrecvs, local_ranks, global_receivers, process_node_list, recvcounts, sendcounts, recv_buf2, send_buf, iter, MPI_COMM_WORLD);
+        collective_write(rank, procs, procs_node, nrecvs, local_ranks, global_receivers, process_node_list, recvcounts, sendcounts, recv_buf2, send_buf, iter, MPI_COMM_WORLD, timer);
     }
 
     timer->total_time += MPI_Wtime() - total_start;
@@ -392,7 +393,7 @@ int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
     total_start = MPI_Wtime();
 
     for ( m = 0; m < ntimes; ++m ){
-        collective_write(rank, procs, procs_node, nrecvs, local_ranks, global_receivers, process_node_list, recvcounts, sendcounts, recv_buf, send_buf2, iter, MPI_COMM_WORLD);
+        collective_write(rank, procs, procs_node, nrecvs, local_ranks, global_receivers, process_node_list, recvcounts, sendcounts, recv_buf, send_buf2, iter, MPI_COMM_WORLD, timer);
     }
 
     timer->total_time += MPI_Wtime() - total_start;
