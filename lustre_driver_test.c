@@ -1192,7 +1192,7 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
         if (j){
             start = MPI_Wtime();
             MPI_Waitall(j, req, sts);
-            timer->start_wait_all_time += MPI_Wtime() - start;
+            timer->send_wait_all_time += MPI_Wtime() - start;
         }
     }
     /* End of inter-node exchange of messages*/
