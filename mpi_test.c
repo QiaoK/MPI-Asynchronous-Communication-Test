@@ -1602,13 +1602,13 @@ int main(int argc, char **argv){
     create_aggregator_list(rank, procs, cb_nodes, aggregator_type, &rank_list, &isagg);
     if (rank == 0){
         printf("total number of processes = %d, cb_nodes = %d, proc_node = %d, data size = %d, comm_size = %d, ntimes=%d\n", procs, cb_nodes, proc_node, data_size, comm_size, ntimes);
-
+/*
         printf("aggregators = ");
         for ( i = 0; i < cb_nodes; ++i ){
             printf("%d, ",rank_list[i]);
         }
         printf("\n");
-
+*/
     }
     for ( i = 0; i < iter; ++i ){
         if (method == 0 || method == 1){
