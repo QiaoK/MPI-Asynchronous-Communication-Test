@@ -685,13 +685,13 @@ int many_to_all_scattered(int rank, int isagg, int procs, int cb_nodes, int data
             for (i = 0; i < ss; i++) {
                 dst = (rank + i + ii) % comm_size;
                 if (recvcounts[dst])
-                    MPI_Irecv(recv_buf[0] + rdispls[dst], recvcounts[dst], dtypes[i], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
+                    MPI_Irecv(recv_buf[0] + rdispls[dst], recvcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
             }
 
             for (i = 0; i < ss; i++) {
                 dst = (rank - i - ii + comm_size) % comm_size;
                 if (sendcounts[dst])
-                    MPI_Issend(send_buf[0] + sdispls[dst], sendcounts[dst], MPI_BYTE, dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
+                    MPI_Issend(send_buf[0] + sdispls[dst], sendcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
             }
             if (j) {
                 MPI_Waitall(j, requests, status);
@@ -746,13 +746,13 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
             for (i = 0; i < ss; i++) {
                 dst = (rank + i + ii) % comm_size;
                 if (recvcounts[dst])
-                    MPI_Irecv(recv_buf[0] + rdispls[dst], recvcounts[dst], dtypes[i], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
+                    MPI_Irecv(recv_buf[0] + rdispls[dst], recvcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
             }
 
             for (i = 0; i < ss; i++) {
                 dst = (rank - i - ii + comm_size) % comm_size;
                 if (sendcounts[dst])
-                    MPI_Issend(send_buf[0] + sdispls[dst], sendcounts[dst], MPI_BYTE, dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
+                    MPI_Issend(send_buf[0] + sdispls[dst], sendcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
             }
             if (j) {
                 MPI_Waitall(j, requests, status);
@@ -1002,8 +1002,9 @@ int all_to_many_half_sync(int rank, int isagg, int procs, int cb_nodes, int data
 
 int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter, int ntimes){
     double start, total_start;
-    int i, j, k, x, m, temp, s_len, *r_lens;
+    int i, j, k, x, m, temp, send_start, s_len, *r_lens;
     int myindex = 0;
+    int ceiling, floor, remainder;
     char **send_buf;
     char **recv_buf = NULL;
     MPI_Status *status;
@@ -1015,30 +1016,57 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
 
     prepare_all_to_many_data(&send_buf, &recv_buf, &status, &requests, &myindex, &s_len, &r_lens, rank, procs, isagg, cb_nodes, rank_list, data_size, iter);
 
-    if (comm_size > cb_nodes){
-        comm_size = cb_nodes;
+    if (comm_size > procs){
+        comm_size = procs;
     }
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
-
-    //steps = (procs + comm_size - 1) / comm_size;
+    
+    ceiling = (procs + cb_nodes - 1) / cb_nodes;
+    floor = procs / cb_nodes;
+    remainder = procs % cb_nodes;
+    if ( rank >= remainder * ceiling ){
+        send_start = remainder + (rank - remainder * ceiling) / floor;
+    } else{
+        send_start = rank / ceiling;
+    }
     for ( m = 0; m < ntimes; ++m ){
-        for ( k = 0; k < cb_nodes; k+=comm_size ){
-            if ( cb_nodes - k < comm_size ){
-                comm_size = cb_nodes - k;
+        for ( k = 0; k < procs; k+=comm_size ){
+            if ( procs - k < comm_size ){
+                comm_size = procs - k;
             }
             j = 0;
             start = MPI_Wtime();
             if (isagg){
                 for ( i = 0; i < comm_size; ++i ){
-                    for ( x = (myindex - k - i + cb_nodes) % cb_nodes; x < procs; x+=cb_nodes ){
-                        MPI_Irecv(recv_buf[x], r_lens[x], MPI_BYTE, x, rank + x, MPI_COMM_WORLD, &requests[j++]);
+                    if (myindex < remainder) {
+                        temp = (k + i + myindex * ceiling) % procs;
+                    } else {
+                        temp = (k + i + remainder * ceiling + (myindex - remainder) * floor) % procs;
                     }
+                    MPI_Irecv(recv_buf[temp], r_lens[temp], MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
                 }
             }
-            for ( i = 0; i < comm_size; ++i ){
-                temp = (rank + k + i)%cb_nodes;
-                MPI_Issend(send_buf[temp], s_len, MPI_BYTE, rank_list[temp], rank + rank_list[temp], MPI_COMM_WORLD, &requests[j++]);
+            for ( x = 0; x < cb_nodes; ++x ) {
+                if (send_start < remainder) {
+                    temp = k + send_start * ceiling;
+                } else {
+                    temp = k + remainder * ceiling + (send_start - remainder) * floor;
+                }
+                if ( (temp >= procs && temp + comm_size >= procs) || (temp < procs && temp + comm_size < procs) ){
+                    if (rank >= temp % procs && rank < (temp + comm_size) % procs ) {
+                        MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);                       
+                    } else {
+                        break;
+                    }
+                } else{
+                    if ( rank >= temp || rank < (temp + comm_size) % procs ) {
+                        MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);                        
+                    } else {
+                        break;
+                    }
+                }
+                send_start = (send_start - 1 + cb_nodes) % cb_nodes;
             }
             timer->post_request_time += MPI_Wtime() - start;
             if (j) {
@@ -1453,20 +1481,30 @@ int many_to_all(int rank, int isagg, int procs, int cb_nodes, int data_size, int
     return 0;
 }
 
-int create_aggregator_list(int rank, int procs,int cb_nodes,int **rank_list, int *is_agg){
+int create_aggregator_list(int rank, int procs,int cb_nodes, int type, int **rank_list, int *is_agg){
     int *rank_list_ptr = (int*) malloc(sizeof(int)*cb_nodes);
     int i, remainder, ceiling, floor;
-    remainder = procs / cb_nodes;
-    ceiling = (procs + cb_nodes - 1) / cb_nodes;
-    floor = procs / cb_nodes;
-    for ( i = 0; i < cb_nodes; ++i ){
-        if ( i < remainder ){
-            rank_list_ptr[i] = ceiling * i;
-        } else {
-            rank_list_ptr[i] = ceiling * remainder + floor * (i - remainder);
+    *is_agg = 0;
+    if (type == 1) {
+        remainder = procs / cb_nodes;
+        ceiling = (procs + cb_nodes - 1) / cb_nodes;
+        floor = procs / cb_nodes;
+        for ( i = 0; i < cb_nodes; ++i ){
+            if ( i < remainder ){
+                rank_list_ptr[i] = ceiling * i;
+            } else {
+                rank_list_ptr[i] = ceiling * remainder + floor * (i - remainder);
+            }
+            if (rank_list_ptr[i] == rank){
+                *is_agg = 1;
+            }
         }
-        if (rank_list_ptr[i] == rank){
-            *is_agg = 1;
+    } else if (type == 0){
+        for ( i = 0; i < cb_nodes; ++i ){
+            rank_list_ptr[i] = i;
+            if (rank_list_ptr[i] == rank){
+                *is_agg = 1;
+            }
         }
     }
     *rank_list = rank_list_ptr;
@@ -1522,14 +1560,14 @@ int summarize_results(int procs, int cb_nodes, int data_size, int comm_size, int
 }
 
 int main(int argc, char **argv){
-    int rank, procs, cb_nodes = 1, method = 0, data_size = 0, proc_node = 1, isagg, i, comm_size = 200000000, iter = 1, ntimes = 1;
+    int rank, procs, cb_nodes = 1, method = 0, data_size = 0, proc_node = 1, isagg, i, comm_size = 200000000, iter = 1, ntimes = 1, aggregator_type = 1;
     int *rank_list;
     Timer timer1,max_timer1;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&procs);
-    while ((i = getopt(argc, argv, "hp:c:m:d:a:i:k:")) != EOF){
+    while ((i = getopt(argc, argv, "hp:c:m:d:a:i:k:t:")) != EOF){
         switch(i) {
             case 'm': 
                 method = atoi(optarg);
@@ -1552,23 +1590,25 @@ int main(int argc, char **argv){
             case 'k':
                 ntimes = atoi(optarg);
                 break;
+            case 't':
+                aggregator_type = atoi(optarg);
+                break;
             default:
                 if (rank==0) usage(argv[0]);
                 MPI_Finalize();
       	        return 0;
         }
     }
-    isagg = 0;
-    create_aggregator_list(rank, procs, cb_nodes, &rank_list, &isagg);
+    create_aggregator_list(rank, procs, cb_nodes, aggregator_type, &rank_list, &isagg);
     if (rank == 0){
         printf("total number of processes = %d, cb_nodes = %d, proc_node = %d, data size = %d, comm_size = %d, ntimes=%d\n", procs, cb_nodes, proc_node, data_size, comm_size, ntimes);
-/*
+
         printf("aggregators = ");
         for ( i = 0; i < cb_nodes; ++i ){
             printf("%d, ",rank_list[i]);
         }
         printf("\n");
-*/
+
     }
     for ( i = 0; i < iter; ++i ){
         if (method == 0 || method == 1){
