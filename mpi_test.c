@@ -655,6 +655,7 @@ int many_to_all_scattered(int rank, int isagg, int procs, int cb_nodes, int data
     MPI_Status *status;
     MPI_Request *requests;
     MPI_Datatype *dtypes;
+    double start;
 
     timer->post_request_time = 0;
     timer->recv_wait_all_time = 0;
@@ -682,6 +683,7 @@ int many_to_all_scattered(int rank, int isagg, int procs, int cb_nodes, int data
             ss = comm_size - ii < bblock ? comm_size - ii : bblock;
             /* do the communication -- post ss sends and receives: */
             j = 0;
+            start = MPI_Wtime();
             for (i = 0; i < ss; i++) {
                 dst = (rank + i + ii) % comm_size;
                 if (recvcounts[dst])
@@ -693,8 +695,11 @@ int many_to_all_scattered(int rank, int isagg, int procs, int cb_nodes, int data
                 if (sendcounts[dst])
                     MPI_Issend(send_buf[0] + sdispls[dst], sendcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
             }
+            timer->post_request_time += MPI_Wtime() - start;
             if (j) {
+                start = MPI_Wtime();
                 MPI_Waitall(j, requests, status);
+                timer->recv_wait_all_time += MPI_Wtime() - start;
             }
         }
     }
@@ -716,6 +721,7 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
     MPI_Status *status;
     MPI_Request *requests;
     MPI_Datatype *dtypes;
+    double start;
 
     timer->post_request_time = 0;
     timer->recv_wait_all_time = 0;
@@ -743,6 +749,7 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
             ss = comm_size - ii < bblock ? comm_size - ii : bblock;
             /* do the communication -- post ss sends and receives: */
             j = 0;
+            start = MPI_Wtime();
             for (i = 0; i < ss; i++) {
                 dst = (rank + i + ii) % comm_size;
                 if (recvcounts[dst])
@@ -754,8 +761,11 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
                 if (sendcounts[dst])
                     MPI_Issend(send_buf[0] + sdispls[dst], sendcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
             }
+            timer->post_request_time += MPI_Wtime() - start;
             if (j) {
+                start = MPI_Wtime();
                 MPI_Waitall(j, requests, status);
+                timer->recv_wait_all_time += MPI_Wtime() - start;
             }
         }
     }
@@ -1070,9 +1080,9 @@ int all_to_many_node_robin(int rank, int isagg, int procs, int cb_nodes, int dat
             }
             for ( x = 0; x < cb_nodes; ++x ) {
                 if (send_start < remainder) {
-                    temp = (k + send_start * ceiling) % procs;
+                    temp = (k + send_start * ceiling);
                 } else {
-                    temp = (k + remainder * ceiling + (send_start - remainder) * floor) % procs;
+                    temp = (k + remainder * ceiling + (send_start - remainder) * floor);
                 }
                 if ( (temp >= procs && temp + comm_size >= procs) || (temp < procs && temp + comm_size < procs) ){
                     if (rank_index >= temp % procs && rank_index < (temp + comm_size) % procs ) {
