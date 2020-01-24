@@ -1622,6 +1622,20 @@ int create_aggregator_list(int rank, int procs,int cb_nodes, int type, int **ran
                 *is_agg = 1;
             }
         }
+    } else if (type == 2){
+        remainder = procs / cb_nodes;
+        ceiling = (procs + cb_nodes - 1) / cb_nodes;
+        floor = procs / cb_nodes;
+        for ( i = 0; i < cb_nodes; ++i ){
+            if ( i < remainder ){
+                rank_list_ptr[i] = (ceiling * i - 1 + procs ) % procs;
+            } else {
+                rank_list_ptr[i] = (ceiling * remainder + floor * (i - remainder) - 1 + procs) % procs;
+            }
+            if (rank_list_ptr[i] == rank){
+                *is_agg = 1;
+            }
+        }
     }
     *rank_list = rank_list_ptr;
     return 0;
