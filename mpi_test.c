@@ -1021,7 +1021,7 @@ int node_robin_map(int rank, int proc_node, int procs,int **node_robin_map, int 
 
 int all_to_many_node_robin(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, int proc_node, Timer *timer, int iter, int ntimes){
     double start, total_start;
-    int i, j, k, x, m, temp, temp2, send_start, s_len, *r_lens, *rank_robin_map;
+    int i, j, k, x, m, temp, send_start, s_len, *r_lens, *rank_robin_map;
     int myindex = 0, rank_index;
     int ceiling, floor, remainder;
     char **send_buf;
@@ -1069,23 +1069,25 @@ int all_to_many_node_robin(int rank, int isagg, int procs, int cb_nodes, int dat
                 }
             }
             for ( x = 0; x < cb_nodes; ++x ) {
-                temp2 = send_start;
                 if (send_start < remainder) {
                     temp = (k + send_start * ceiling) % procs;
                 } else {
                     temp = (k + remainder * ceiling + (send_start - remainder) * floor) % procs;
                 }
-                for (i = 0; i < comm_size; ++i){
-                    if (rank_robin_map[temp] == rank) {
-                        MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);
-                        send_start = (send_start - 1 + cb_nodes) % cb_nodes;
+                if ( (temp >= procs && temp + comm_size >= procs) || (temp < procs && temp + comm_size < procs) ){
+                    if (rank_index >= temp % procs && rank_index < (temp + comm_size) % procs ) {
+                        MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);                       
+                    } else {
                         break;
                     }
-                    temp = (temp + 1) % procs;
+                } else{
+                    if ( rank_index >= temp || rank_index < (temp + comm_size) % procs ) {
+                        MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);                        
+                    } else {
+                        break;
+                    }
                 }
-                if (temp2 == send_start){
-                    break;
-                }
+                send_start = (send_start - 1 + cb_nodes) % cb_nodes;
             }
             timer->post_request_time += MPI_Wtime() - start;
             if (j) {
@@ -1098,6 +1100,7 @@ int all_to_many_node_robin(int rank, int isagg, int procs, int cb_nodes, int dat
     timer->total_time += MPI_Wtime() - total_start;
 
     clean_all_to_many(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+    free(rank_robin_map);
 
     return 0;
 }
