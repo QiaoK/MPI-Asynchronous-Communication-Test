@@ -1628,9 +1628,9 @@ int create_aggregator_list(int rank, int procs,int cb_nodes, int type, int **ran
         floor = procs / cb_nodes;
         for ( i = 0; i < cb_nodes; ++i ){
             if ( i < remainder ){
-                rank_list_ptr[i] = (ceiling * i - 1 + procs ) % procs;
+                rank_list_ptr[i] = (ceiling * i - 32 + procs * 32 ) % procs;
             } else {
-                rank_list_ptr[i] = (ceiling * remainder + floor * (i - remainder) - 1 + procs) % procs;
+                rank_list_ptr[i] = (ceiling * remainder + floor * (i - remainder) - 32 + procs * 32) % procs;
             }
             if (rank_list_ptr[i] == rank){
                 *is_agg = 1;
