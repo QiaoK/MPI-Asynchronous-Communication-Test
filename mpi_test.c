@@ -1730,6 +1730,7 @@ int main(int argc, char **argv){
         }
     }
     create_aggregator_list(rank, procs, cb_nodes, aggregator_type, &rank_list, &isagg);
+/*
     if (rank == 0){
         printf("total number of processes = %d, cb_nodes = %d, proc_node = %d, data size = %d, comm_size = %d, ntimes=%d\n", procs, cb_nodes, proc_node, data_size, comm_size, ntimes);
 
@@ -1740,6 +1741,7 @@ int main(int argc, char **argv){
         printf("\n");
 
     }
+*/
     for ( i = 0; i < iter; ++i ){
         if (method == 0 || method == 1){
             all_to_many(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
