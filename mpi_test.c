@@ -1644,6 +1644,9 @@ int create_aggregator_list(int rank, int procs, int cb_nodes, int proc_node, int
             if ( remainder >= procs ){
                 remainder = remainder % proc_node + 1;
             }
+            if (rank_list_ptr[i] == rank){
+                *is_agg = 1;
+            }
         }
     }
     *rank_list = rank_list_ptr;
