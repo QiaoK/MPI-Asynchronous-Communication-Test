@@ -1738,7 +1738,7 @@ int main(int argc, char **argv){
       	        return 0;
         }
     }
-    create_aggregator_list(rank, procs, cb_nodes, aggregator_type, &rank_list, &isagg);
+    create_aggregator_list(rank, procs, cb_nodes, proc_node, aggregator_type, &rank_list, &isagg);
 /*
     if (rank == 0){
         printf("total number of processes = %d, cb_nodes = %d, proc_node = %d, data size = %d, comm_size = %d, ntimes=%d\n", procs, cb_nodes, proc_node, data_size, comm_size, ntimes);
