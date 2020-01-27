@@ -1597,7 +1597,7 @@ int many_to_all(int rank, int isagg, int procs, int cb_nodes, int data_size, int
     return 0;
 }
 
-int create_aggregator_list(int rank, int procs,int cb_nodes, int type, int **rank_list, int *is_agg){
+int create_aggregator_list(int rank, int procs, int cb_nodes, int proc_node, int type, int **rank_list, int *is_agg){
     int *rank_list_ptr = (int*) malloc(sizeof(int)*cb_nodes);
     int i, remainder, ceiling, floor;
     *is_agg = 0;
@@ -1634,6 +1634,15 @@ int create_aggregator_list(int rank, int procs,int cb_nodes, int type, int **ran
             }
             if (rank_list_ptr[i] == rank){
                 *is_agg = 1;
+            }
+        }
+    } else if (type == 3) {
+        remainder = 0;
+        for ( i = 0; i < cb_nodes; ++i ) {
+            rank_list_ptr[i] = remainder;
+            remainder += proc_node;
+            if ( remainder >= procs ){
+                remainder = remainder % proc_node + 1;
             }
         }
     }
