@@ -1160,7 +1160,11 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
                     } else {
                         temp = (k + i + remainder * ceiling + (myindex - remainder) * floor) % procs;
                     }
-                    MPI_Irecv(recv_buf[temp], r_lens[temp], MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
+                    if (temp != rank){
+                        MPI_Irecv(recv_buf[temp], r_lens[temp], MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
+                    } else {
+                        memcpy(recv_buf[temp], send_buf[myindex], r_lens[temp] * sizeof(char));
+                    }
                 }
             }
             for ( x = 0; x < cb_nodes; ++x ) {
@@ -1171,13 +1175,17 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
                 }
                 if ( (temp >= procs && temp + comm_size >= procs) || (temp < procs && temp + comm_size < procs) ){
                     if (rank >= temp % procs && rank < (temp + comm_size) % procs ) {
-                        MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);                       
+                        if ( rank_list[send_start] != rank ){
+                            MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);
+                        }                       
                     } else {
                         break;
                     }
                 } else{
                     if ( rank >= temp || rank < (temp + comm_size) % procs ) {
-                        MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);                        
+                        if ( rank_list[send_start] != rank ){
+                            MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);
+                        }                        
                     } else {
                         break;
                     }
