@@ -1266,7 +1266,7 @@ int many_to_all_balanced_boundary(int rank, int isagg, int procs, int cb_nodes, 
 
 int many_to_all_balanced(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter, int ntimes){
     double start, total_start;
-    int i, j, k, x, m, temp, myindex = 0, s_len, *r_lens;
+    int i, j, k, x, m, temp, remainder, ceiling, floor, myindex = 0, s_len, *r_lens;
     char **send_buf = NULL;
     char **recv_buf = NULL;
     MPI_Status *status;
