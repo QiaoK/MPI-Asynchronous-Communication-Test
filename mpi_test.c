@@ -1334,7 +1334,7 @@ int many_to_all_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
                     if (temp != rank){
                         MPI_Issend(send_buf[temp], s_len, MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
                     } else {
-                        memcpy(recv_buf[temp], send_buf[temp], r_lens[temp] * sizeof(char));
+                        memcpy(recv_buf[myindex], send_buf[temp], r_lens[temp] * sizeof(char));
                     }
                 }
             }
