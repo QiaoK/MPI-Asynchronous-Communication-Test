@@ -1163,6 +1163,15 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
                     }
                     if (temp != rank){
                         MPI_Isend(&dummy, 1, MPI_BYTE, temp, rank + temp * 100, MPI_COMM_WORLD, &requests[j++]);
+                    }
+                }
+                for ( i = 0; i < comm_size; ++i ){
+                    if (myindex < remainder) {
+                        temp = (k + i + myindex * ceiling) % procs;
+                    } else {
+                        temp = (k + i + remainder * ceiling + (myindex - remainder) * floor) % procs;
+                    }
+                    if (temp != rank){
                         MPI_Irecv(recv_buf[temp], r_lens[temp], MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
                     } else {
                         memcpy(recv_buf[temp], send_buf[myindex], r_lens[temp] * sizeof(char));
