@@ -1116,6 +1116,103 @@ int all_to_many_node_robin(int rank, int isagg, int procs, int cb_nodes, int dat
     return 0;
 }
 
+int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter, int ntimes){
+    double start, total_start;
+    int i, j, k, x, m, temp, send_start, s_len, *r_lens;
+    int myindex = 0;
+    int ceiling, floor, remainder;
+    char **send_buf;
+    char **recv_buf = NULL;
+    MPI_Status *status;
+    MPI_Request *requests;
+    timer->post_request_time = 0;
+    timer->recv_wait_all_time = 0;
+    timer->send_wait_all_time = 0;
+    timer->total_time = 0;
+
+    prepare_all_to_many_data(&send_buf, &recv_buf, &status, &requests, &myindex, &s_len, &r_lens, rank, procs, isagg, cb_nodes, rank_list, data_size, iter);
+
+    if (comm_size > procs){
+        comm_size = procs;
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    total_start = MPI_Wtime();
+    
+    ceiling = (procs + cb_nodes - 1) / cb_nodes;
+    floor = procs / cb_nodes;
+    remainder = procs % cb_nodes;
+    if ( rank >= remainder * ceiling ){
+        send_start = remainder + (rank - remainder * ceiling) / floor;
+    } else{
+        send_start = rank / ceiling;
+    }
+    for ( m = 0; m < ntimes; ++m ){
+        for ( k = 0; k < procs; k+=comm_size ){
+            if ( procs - k < comm_size ){
+                comm_size = procs - k;
+            }
+            j = 0;
+            start = MPI_Wtime();
+            if (isagg){
+                for ( i = 0; i < comm_size; ++i ){
+                    if (myindex < remainder) {
+                        temp = (k + i + myindex * ceiling) % procs;
+                    } else {
+                        temp = (k + i + remainder * ceiling + (myindex - remainder) * floor) % procs;
+                    }
+                    if (temp != rank){
+                        MPI_Irecv(recv_buf[temp], r_lens[temp], MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
+                        MPI_Send(MPI_BOTTOM, 0, MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD);
+                    } else {
+                        memcpy(recv_buf[temp], send_buf[myindex], r_lens[temp] * sizeof(char));
+                    }
+                }
+            }
+            for ( x = 0; x < cb_nodes; ++x ) {
+                if (send_start < remainder) {
+                    temp = k + send_start * ceiling;
+                } else {
+                    temp = k + remainder * ceiling + (send_start - remainder) * floor;
+                }
+                if ( (temp >= procs && temp + comm_size >= procs) || (temp < procs && temp + comm_size < procs) ){
+                    if (rank >= temp % procs && rank < (temp + comm_size) % procs ) {
+                        if ( rank_list[send_start] != rank ){
+                            MPI_Recv(MPI_BOTTOM, 0, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start],
+                                        MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                            MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);
+                        }                       
+                    } else {
+                        break;
+                    }
+                } else{
+                    if ( rank >= temp || rank < (temp + comm_size) % procs ) {
+                        if ( rank_list[send_start] != rank ){
+                            MPI_Recv(MPI_BOTTOM, 0, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start],
+                                        MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                            MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);
+                        }                        
+                    } else {
+                        break;
+                    }
+                }
+                send_start = (send_start - 1 + cb_nodes) % cb_nodes;
+            }
+            timer->post_request_time += MPI_Wtime() - start;
+            if (j) {
+                start = MPI_Wtime();
+                MPI_Waitall(j, requests, status);
+                timer->recv_wait_all_time += MPI_Wtime() - start;
+            }
+        }
+    }
+    timer->total_time += MPI_Wtime() - total_start;
+
+    clean_all_to_many(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
+
+    return 0;
+}
+
+
 
 int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter, int ntimes){
     double start, total_start;
@@ -1931,6 +2028,14 @@ int main(int argc, char **argv){
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "all_to_many_node_robin.csv", "All to many node robin", timer1, max_timer1);
+            }
+        }
+
+        if (method == 0 || method == 18){
+            all_to_many_balanced_control(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, proc_node, &timer1, i, ntimes);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+            if (rank == 0){
+                summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "all_to_many_balanced_control.csv", "All to many balanced control", timer1, max_timer1);
             }
         }
 
