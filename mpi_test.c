@@ -1162,7 +1162,7 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
                         temp = (k + i + remainder * ceiling + (myindex - remainder) * floor) % procs;
                     }
                     if (temp != rank){
-                        MPI_Isend(&dummy, 1, MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
+                        MPI_Isend(&dummy, 1, MPI_BYTE, temp, rank + temp * 11, MPI_COMM_WORLD, &requests[j++]);
                         MPI_Irecv(recv_buf[temp], r_lens[temp], MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
                         printf("rank %d sending to %d\n",rank, temp);
                     } else {
@@ -1180,7 +1180,7 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
                     if (rank >= temp % procs && rank < (temp + comm_size) % procs ) {
                         if ( rank_list[send_start] != rank ){
                             printf("rank %d expect recv from %d\n",rank, rank_list[send_start]);
-                            MPI_Recv(&dummy, 1, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start],
+                            MPI_Recv(&dummy, 1, MPI_BYTE, rank_list[send_start], rank * 11 + rank_list[send_start],
                                         MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
                             MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);
