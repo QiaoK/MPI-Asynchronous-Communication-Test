@@ -1124,6 +1124,7 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
     char **send_buf;
     char **recv_buf = NULL;
     char dummy;
+    MPI_Comm signal_comm;
     MPI_Status *status;
     MPI_Request *requests;
     timer->post_request_time = 0;
@@ -1136,6 +1137,9 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
     if (comm_size > procs){
         comm_size = procs;
     }
+
+    MPI_Comm_dup(MPI_COMM_WORLD, &signal_comm);
+
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
     
@@ -1162,7 +1166,7 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
                         temp = (k + i + remainder * ceiling + (myindex - remainder) * floor) % procs;
                     }
                     if (temp != rank){
-                        MPI_Isend(&dummy, 1, MPI_BYTE, temp, rank + temp * 100, MPI_COMM_WORLD, &requests[j++]);
+                        MPI_Isend(&dummy, 1, MPI_BYTE, temp, rank + temp * 100, signal_comm, &requests[j++]);
                     }
                 }
                 for ( i = 0; i < comm_size; ++i ){
@@ -1188,7 +1192,7 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
                     if (rank >= temp % procs && rank < (temp + comm_size) % procs ) {
                         if ( rank_list[send_start] != rank ){
                             MPI_Recv(&dummy, 1, MPI_BYTE, rank_list[send_start], rank * 100 + rank_list[send_start],
-                                        MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                                        signal_comm, MPI_STATUS_IGNORE);
 
                             MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);
                         }                       
@@ -1199,7 +1203,7 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
                     if ( rank >= temp || rank < (temp + comm_size) % procs ) {
                         if ( rank_list[send_start] != rank ){
                             MPI_Recv(&dummy, 1, MPI_BYTE, rank_list[send_start], rank * 100 + rank_list[send_start],
-                                        MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                                        signal_comm, MPI_STATUS_IGNORE);
 
                             MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);
                         }                        
