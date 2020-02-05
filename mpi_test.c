@@ -98,8 +98,8 @@ int prepare_many_to_all_data(char ***send_buf, char*** recv_buf, MPI_Status **st
     *r_lens = (int*) malloc(sizeof(int) * cb_nodes);
 
     if (isagg){
-        *requests = (MPI_Request*) malloc(sizeof(MPI_Request) * (cb_nodes + procs));
-        *status = (MPI_Status*) malloc(sizeof(MPI_Status) * (cb_nodes + procs));
+        *requests = (MPI_Request*) malloc(sizeof(MPI_Request) * (cb_nodes + procs * 2));
+        *status = (MPI_Status*) malloc(sizeof(MPI_Status) * (cb_nodes + procs * 2));
         *send_buf = (char**) malloc(sizeof(char*) * procs);
         send_buf[0][0] = (char*) malloc(sizeof(char) * s_len[0] * procs);
         fill_buffer(rank, send_buf[0][0], s_len[0], 0,iter);
@@ -1163,19 +1163,8 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
                     }
                     if (temp != rank){
                         MPI_Isend(&dummy, 1, MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
-                    }
-                }
-                MPI_Waitall(j, requests, status);
-                j = 0;
-                for ( i = 0; i < comm_size; ++i ){
-                    if (myindex < remainder) {
-                        temp = (k + i + myindex * ceiling) % procs;
-                    } else {
-                        temp = (k + i + remainder * ceiling + (myindex - remainder) * floor) % procs;
-                    }
-                    if (temp != rank){
-                        printf("rank %d sending to %d\n",rank, temp);
                         MPI_Irecv(recv_buf[temp], r_lens[temp], MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
+                        printf("rank %d sending to %d\n",rank, temp);
                     } else {
                         memcpy(recv_buf[temp], send_buf[myindex], r_lens[temp] * sizeof(char));
                     }
