@@ -164,8 +164,8 @@ int prepare_all_to_many_data(char ***send_buf, char*** recv_buf, MPI_Status **st
 
     int i;
     if (isagg){
-        *requests = (MPI_Request*) malloc(sizeof(MPI_Request) * (cb_nodes + procs));
-        *status = (MPI_Status*) malloc(sizeof(MPI_Status) * (cb_nodes + procs));
+        *requests = (MPI_Request*) malloc(sizeof(MPI_Request) * (cb_nodes + procs * 2));
+        *status = (MPI_Status*) malloc(sizeof(MPI_Status) * (cb_nodes + procs * 2));
         recv_buf[0] = (char**) malloc(sizeof(char*) * procs);
         r_len = 0;
         for ( i = 0; i < procs; ++i ){
