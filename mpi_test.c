@@ -1167,7 +1167,7 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
                     if (temp != rank){
                         // Enable receiving channel first, then we signal senders to post data.
                         MPI_Irecv(recv_buf[temp], r_lens[temp], MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
-                        MPI_Send(MPI_BOTTOM, 0, MPI_BYTE, temp, rank + temp * 100, signal_comm);
+                        MPI_Isend(MPI_BOTTOM, 0, MPI_BYTE, temp, rank + temp * 100, signal_comm, &requests[j++]);
                     } else {
                         memcpy(recv_buf[temp], send_buf[myindex], r_lens[temp] * sizeof(char));
                     }
