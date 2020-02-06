@@ -1166,17 +1166,9 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
                         temp = (k + i + remainder * ceiling + (myindex - remainder) * floor) % procs;
                     }
                     if (temp != rank){
-                        MPI_Isend(&dummy, 1, MPI_BYTE, temp, rank + temp * 100, signal_comm, &requests[j++]);
-                    }
-                }
-                for ( i = 0; i < comm_size; ++i ){
-                    if (myindex < remainder) {
-                        temp = (k + i + myindex * ceiling) % procs;
-                    } else {
-                        temp = (k + i + remainder * ceiling + (myindex - remainder) * floor) % procs;
-                    }
-                    if (temp != rank){
+                        // Enable receiving channel first, then we signal senders to post data.
                         MPI_Irecv(recv_buf[temp], r_lens[temp], MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
+                        MPI_Isend(&dummy, 1, MPI_BYTE, temp, rank + temp * 100, signal_comm, &requests[j++]);
                     } else {
                         memcpy(recv_buf[temp], send_buf[myindex], r_lens[temp] * sizeof(char));
                     }
@@ -1191,9 +1183,9 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
                 if ( (temp >= procs && temp + comm_size >= procs) || (temp < procs && temp + comm_size < procs) ){
                     if (rank >= temp % procs && rank < (temp + comm_size) % procs ) {
                         if ( rank_list[send_start] != rank ){
+                            // Wait for signal to post issend, this can avoid congestion caused by Issend
                             MPI_Recv(&dummy, 1, MPI_BYTE, rank_list[send_start], rank * 100 + rank_list[send_start],
                                         signal_comm, MPI_STATUS_IGNORE);
-
                             MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);
                         }                       
                     } else {
@@ -1202,9 +1194,9 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
                 } else{
                     if ( rank >= temp || rank < (temp + comm_size) % procs ) {
                         if ( rank_list[send_start] != rank ){
+                            // Wait for signal to post issend, this can avoid congestion caused by Issend
                             MPI_Recv(&dummy, 1, MPI_BYTE, rank_list[send_start], rank * 100 + rank_list[send_start],
                                         signal_comm, MPI_STATUS_IGNORE);
-
                             MPI_Issend(send_buf[send_start], s_len, MPI_BYTE, rank_list[send_start], rank + rank_list[send_start], MPI_COMM_WORLD, &requests[j++]);
                         }                        
                     } else {
