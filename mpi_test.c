@@ -749,19 +749,20 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
             ss = comm_size - ii < bblock ? comm_size - ii : bblock;
             /* do the communication -- post ss sends and receives: */
             j = 0;
-            start = MPI_Wtime();
             for (i = 0; i < ss; i++) {
                 dst = (rank + i + ii) % comm_size;
-                if (recvcounts[dst])
+                if (recvcounts[dst]) {
+                    start = MPI_Wtime();
                     MPI_Irecv(recv_buf[0] + rdispls[dst], recvcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
+                    timer->post_request_time += MPI_Wtime() - start;
+                }
             }
-
+            MPI_Barrier(MPI_COMM_WORLD);
             for (i = 0; i < ss; i++) {
                 dst = (rank - i - ii + comm_size) % comm_size;
                 if (sendcounts[dst])
                     MPI_Issend(send_buf[0] + sdispls[dst], sendcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
             }
-            timer->post_request_time += MPI_Wtime() - start;
             if (j) {
                 start = MPI_Wtime();
                 MPI_Waitall(j, requests, status);
@@ -1257,7 +1258,6 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
                 comm_size = procs - k;
             }
             j = 0;
-            start = MPI_Wtime();
             if (isagg){
                 for ( i = 0; i < comm_size; ++i ){
                     if (myindex < remainder) {
@@ -1266,12 +1266,15 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
                         temp = (k + i + remainder * ceiling + (myindex - remainder) * floor) % procs;
                     }
                     if (temp != rank){
+                        start = MPI_Wtime();
                         MPI_Irecv(recv_buf[temp], r_lens[temp], MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
+                        timer->post_request_time += MPI_Wtime() - start;
                     } else {
                         memcpy(recv_buf[temp], send_buf[myindex], r_lens[temp] * sizeof(char));
                     }
                 }
             }
+            MPI_Barrier(MPI_COMM_WORLD);
             for ( x = 0; x < cb_nodes; ++x ) {
                 if (send_start < remainder) {
                     temp = k + send_start * ceiling;
@@ -1297,7 +1300,6 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
                 }
                 send_start = (send_start - 1 + cb_nodes) % cb_nodes;
             }
-            timer->post_request_time += MPI_Wtime() - start;
             if (j) {
                 start = MPI_Wtime();
                 MPI_Waitall(j, requests, status);
