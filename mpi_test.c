@@ -2130,7 +2130,7 @@ int main(int argc, char **argv){
             all_to_many_scattered_isend(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
-                summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many balanced control", timer1, max_timer1);
+                summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many scattered isend", timer1, max_timer1);
             }
         }
 
