@@ -761,7 +761,7 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
                     if (!isagg) {
                         start = MPI_Wtime();
                     }
-                    MPI_Issend(send_buf[0] + sdispls[dst], sendcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
+                    MPI_Isend(send_buf[0] + sdispls[dst], sendcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
                     if (!isagg) {
                         timer->post_request_time += MPI_Wtime() - start;
                     }
