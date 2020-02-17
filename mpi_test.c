@@ -752,24 +752,33 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
             for (i = 0; i < ss; i++) {
                 dst = (rank + i + ii) % comm_size;
                 if (recvcounts[dst]) {
-                    start = MPI_Wtime();
                     MPI_Irecv(recv_buf[0] + rdispls[dst], recvcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
-                    timer->post_request_time += MPI_Wtime() - start;
                 }
             }
-            MPI_Barrier(MPI_COMM_WORLD);
             for (i = 0; i < ss; i++) {
                 dst = (rank - i - ii + comm_size) % comm_size;
-                if (sendcounts[dst])
+                if (sendcounts[dst]) {
+                    if (!isagg) {
+                        start = MPI_Wtime();
+                    }
                     MPI_Issend(send_buf[0] + sdispls[dst], sendcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
+                    if (!isagg) {
+                        timer->post_request_time += MPI_Wtime() - start;
+                    }
+                }
             }
             if (j) {
-                start = MPI_Wtime();
+                if (!isagg) {
+                    start = MPI_Wtime();
+                }
                 MPI_Waitall(j, requests, status);
-                timer->recv_wait_all_time += MPI_Wtime() - start;
+                if (!isagg) {
+                    timer->recv_wait_all_time += MPI_Wtime() - start;
+                }
             }
         }
     }
+    MPI_Barrier(MPI_WORLD);
     timer->total_time += MPI_Wtime() - total_start;
 
     all_to_many_alltoall_clean(sdispls, rdispls, sendcounts, recvcounts, dtypes);
