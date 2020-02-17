@@ -778,7 +778,7 @@ int all_to_many_scattered_isend(int rank, int isagg, int procs, int cb_nodes, in
             }
         }
     }
-    MPI_Barrier(MPI_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
     timer->total_time += MPI_Wtime() - total_start;
 
     all_to_many_alltoall_clean(sdispls, rdispls, sendcounts, recvcounts, dtypes);
@@ -846,7 +846,6 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
             }
         }
     }
-    MPI_Barrier(MPI_WORLD);
     timer->total_time += MPI_Wtime() - total_start;
 
     all_to_many_alltoall_clean(sdispls, rdispls, sendcounts, recvcounts, dtypes);
