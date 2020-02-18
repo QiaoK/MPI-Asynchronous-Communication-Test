@@ -772,10 +772,9 @@ int all_to_many_scattered_isend(int rank, int isagg, int procs, int cb_nodes, in
                 }
             }
             if (j) {
-                if (!isagg) {
-                    start = MPI_Wtime();
-                }
+                start = MPI_Wtime();
                 MPI_Waitall(j, requests, status);
+                timer->recv_wait_all_time += MPI_Wtime() - start;
                 if (!isagg) {
                     timer->send_wait_all_time += MPI_Wtime() - start;
                 }
