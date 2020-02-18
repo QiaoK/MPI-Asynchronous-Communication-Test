@@ -777,7 +777,7 @@ int all_to_many_scattered_isend(int rank, int isagg, int procs, int cb_nodes, in
                 }
                 MPI_Waitall(j, requests, status);
                 if (!isagg) {
-                    timer->recv_wait_all_time += MPI_Wtime() - start;
+                    timer->send_wait_all_time += MPI_Wtime() - start;
                 }
             }
         }
@@ -847,6 +847,9 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
                 start = MPI_Wtime();
                 MPI_Waitall(j, requests, status);
                 timer->recv_wait_all_time += MPI_Wtime() - start;
+                if (!isagg) {
+                    timer->send_wait_all_time += MPI_Wtime() - start;
+                }
             }
         }
     }
@@ -1186,6 +1189,9 @@ int all_to_many_node_robin(int rank, int isagg, int procs, int cb_nodes, int dat
                 start = MPI_Wtime();
                 MPI_Waitall(j, requests, status);
                 timer->recv_wait_all_time += MPI_Wtime() - start;
+                if (!isagg) {
+                    timer->send_wait_all_time += MPI_Wtime() - start;
+                }
             }
         }
     }
@@ -1290,6 +1296,9 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
                 start = MPI_Wtime();
                 MPI_Waitall(j, requests, status);
                 timer->recv_wait_all_time += MPI_Wtime() - start;
+                if (!isagg) {
+                    timer->send_wait_all_time += MPI_Wtime() - start;
+                }
             }
         }
     }
@@ -1384,6 +1393,9 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
                 start = MPI_Wtime();
                 MPI_Waitall(j, requests, status);
                 timer->recv_wait_all_time += MPI_Wtime() - start;
+                if (!isagg) {
+                    timer->send_wait_all_time += MPI_Wtime() - start;
+                }
             }
         }
     }
