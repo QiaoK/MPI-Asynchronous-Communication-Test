@@ -134,9 +134,11 @@ int prepare_many_to_all_data(char ***send_buf, char*** recv_buf, MPI_Status **st
 int clean_many_to_all(int rank, int procs, int cb_nodes, int *rank_list, int myindex, int iter, char ***send_buf, char*** recv_buf, MPI_Status **status, MPI_Request **requests, int **r_lens, int isagg){
     int i;
     for ( i = 0; i < cb_nodes; ++i ){
+/*
         if ( check_buffer(rank_list[i], recv_buf[0][i], r_lens[0][i], rank, iter) ){
             printf("rank %d, message is wrong from rank %d\n",rank, rank_list[i]);
         }
+*/
     }
     rank = 0;
     procs = 0;
@@ -205,11 +207,13 @@ int clean_all_to_many(int rank, int procs, int cb_nodes, int *rank_list, int myi
     free(status[0]);
     free(requests[0]);
     if (isagg){
+/*
         for ( i = 0; i < procs; ++i ){
             if ( check_buffer(i, recv_buf[0][i], r_lens[0][i], myindex, iter) ){
                 printf("rank %d, message is wrong from rank %d\n",rank, i);
             }
         }
+*/
         free(r_lens[0]);
         free(recv_buf[0][0]);
         free(recv_buf[0]);
@@ -835,7 +839,7 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
             for (i = 0; i < ss; i++) {
                 dst = (rank - i - ii + comm_size) % comm_size;
                 if (sendcounts[dst]) {
-                    MPI_Isend(send_buf[0] + sdispls[dst], sendcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
+                    MPI_Issend(send_buf[0] + sdispls[dst], sendcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
                 }
             }
             timer->post_request_time += MPI_Wtime() - start;
