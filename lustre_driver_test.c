@@ -1150,9 +1150,9 @@ int collective_write(int myrank, int nprocs, int nprocs_node, int nrecvs, int* l
             global_s_lens[i] = temp2;
             //Let the ith node proxy know the message size to be sent from this node.
             if (r_rank != myrank){
-                MPI_Issend(global_s_lens+i, 1, MPI_INT, r_rank, r_rank + myrank + 100 * iter, comm, &req[j++]);
                 //Figure out the message to be received from the ith node proxy.
                 MPI_Irecv(global_r_lens+i, 1, MPI_INT, r_rank, r_rank + myrank + 100 * iter, comm, &req[j++]);
+                MPI_Issend(global_s_lens+i, 1, MPI_INT, r_rank, r_rank + myrank + 100 * iter, comm, &req[j++]);
             }else{
                 global_r_lens[i] = temp2;
             }

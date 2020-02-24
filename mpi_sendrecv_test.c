@@ -22,9 +22,9 @@
 }
 #define MAP_DATA(a,b,c,d) ((a)*7+(b)*3+(c)*5+11*((a)-22)*((b)-56)+(d))
 
-int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes){
+int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
     double total_start, total_timing, mean, var;
-    int m, dst;
+    int i, m, dst;
     char *send_buf= NULL;
     char *recv_buf = NULL;
     MPI_Status status;
@@ -43,17 +43,20 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes){
     total_timing = MPI_Wtime();
     for ( m = 0; m < ntimes; ++m ){
         total_start = MPI_Wtime();
-        if ( rank == 0 ) {
-            dst = 1;
-            MPI_Irecv(recv_buf, data_size, MPI_BYTE, dst, rank + dst, MPI_COMM_WORLD, &request);
-        } else {
-            dst = 0;
-            MPI_Issend(send_buf, data_size, MPI_BYTE, dst, rank + dst, MPI_COMM_WORLD, &request);
+        for ( i = 0; i < runs; ++i ) {
+            if ( rank == 0 ) {
+                dst = 1;
+                MPI_Irecv(recv_buf, data_size, MPI_BYTE, dst, rank + dst, MPI_COMM_WORLD, &request);
+            } else {
+                dst = 0;
+                MPI_Issend(send_buf, data_size, MPI_BYTE, dst, rank + dst, MPI_COMM_WORLD, &request);
+            }
+            MPI_Wait(&request,&status);
         }
-        MPI_Wait(&request,&status);
         total_start = MPI_Wtime() - total_start;
         mean += total_start;
         var += total_start * total_start;
+        MPI_Barrier(MPI_COMM_WORLD);
     }
     total_timing = MPI_Wtime() - total_timing;
     mean = mean / m;
@@ -70,12 +73,12 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes){
 }
 
 int main(int argc, char **argv){
-    int rank, procs, i, ntimes, data_size;
+    int rank, procs, i, ntimes = 0, data_size = 0, runs = 0;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&procs);
-    while ((i = getopt(argc, argv, "hk:d:")) != EOF){
+    while ((i = getopt(argc, argv, "hk:d:n:")) != EOF){
         switch(i) {
             case 'd': 
                 data_size = atoi(optarg);
@@ -83,13 +86,16 @@ int main(int argc, char **argv){
             case 'k': 
                 ntimes = atoi(optarg);
                 break;
+            case 'n': 
+                runs = atoi(optarg);
+                break;
             default:
                 MPI_Finalize();
       	        return 0;
         }
     }
 
-    pt2pt_statistics(rank, procs, data_size, ntimes);
+    pt2pt_statistics(rank, procs, data_size, ntimes, runs);
     MPI_Finalize();
     return 0;
 }
