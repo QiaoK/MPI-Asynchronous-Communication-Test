@@ -60,7 +60,7 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
     }
     total_timing = MPI_Wtime() - total_timing;
     mean = mean / m;
-    var = var - mean * mean;
+    var = var/m - mean * mean;
     printf("rank %d, mean = %lf, var = %lf, ntimes = %d, total_timing = %lf, mean*ntimes = %lf\n", rank, mean, var, ntimes, total_timing, mean*m);
     if (rank == 1) {
         free(send_buf);
