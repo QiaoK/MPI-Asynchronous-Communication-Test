@@ -78,7 +78,7 @@ int main(int argc, char **argv){
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&procs);
-    while ((i = getopt(argc, argv, "hk:d:n:")) != EOF){
+    while ((i = getopt(argc, argv, "hk:d:i:")) != EOF){
         switch(i) {
             case 'd': 
                 data_size = atoi(optarg);
@@ -86,7 +86,7 @@ int main(int argc, char **argv){
             case 'k': 
                 ntimes = atoi(optarg);
                 break;
-            case 'n': 
+            case 'i': 
                 runs = atoi(optarg);
                 break;
             default:
