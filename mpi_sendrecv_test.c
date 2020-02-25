@@ -73,16 +73,10 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
     for ( m = 0; m < ntimes; ++m ) {
         fprintf(stream,"%lf\n",time_list[m]);
         mean += time_list[m];
+        var += time_list[m]*time_list[m];
     }
     mean = mean/m;
-    double x=0;
-    for ( m = 0; m < ntimes; ++m ) {
-        var += (time_list[m]-mean)*(time_list[m]-mean);
-        x+=time_list[m]*time_list[m];
-    }
-    printf("rank %d, %lf\n",rank,sqrt(x/m-mean*mean));
-    var = var/m;
-    std = sqrt(var);
+    std = sqrt(var/m-mean*mean);
     printf("rank %d, mean = %lf, std = %lf, ntimes = %d, total_timing = %lf, mean*ntimes = %lf\n", rank, mean, std, ntimes, total_timing, mean*m);
     if (rank == 1) {
         free(send_buf);
