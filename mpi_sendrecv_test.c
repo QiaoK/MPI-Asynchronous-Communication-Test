@@ -1,8 +1,8 @@
 /*
- * Copyright (C) 2019, Northwestern University
+ * Copyright (C) 2020, Northwestern University
  * See COPYRIGHT notice in top-level directory.
  *
- * This program evaluates the performance of all-to-all broadcast (Allgather and Allgatherv) algorithms proposed in our research paper.
+ * This program evaluates the performance of point-to-point sendrecv operations.
  */
 
 #include <mpi.h>
@@ -11,16 +11,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#define DEBUG 0
-#define ERR { \
-    if (err != MPI_SUCCESS) { \
-        int errorStringLen; \
-        char errorString[MPI_MAX_ERROR_STRING]; \
-        MPI_Error_string(err, errorString, &errorStringLen); \
-        printf("Error at line %d: (%s)\n", __LINE__,errorString); \
-    } \
-}
-#define MAP_DATA(a,b,c,d) ((a)*7+(b)*3+(c)*5+11*((a)-22)*((b)-56)+(d))
 
 int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
     double total_start, total_timing, mean, var, std;
