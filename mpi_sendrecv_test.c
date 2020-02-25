@@ -61,13 +61,7 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
     total_timing = MPI_Wtime() - total_timing;
 
     filename = "sendrecv_results.csv";
-    stream = fopen(filename,"r");
-    if (stream){
-        fclose(stream);
-        stream = fopen(filename,"a");
-    } else {
-        stream = fopen(filename,"w");
-    }
+    stream = fopen(filename,"w");
     mean = 0;
     var = 0;
     for ( m = 0; m < ntimes; ++m ) {
