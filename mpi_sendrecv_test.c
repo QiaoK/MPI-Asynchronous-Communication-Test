@@ -41,8 +41,6 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
     } else {
         recv_buf = (char*) malloc(sizeof(char) * data_size);
     }
-    mean = 0;
-    var = 0;
     MPI_Barrier(MPI_COMM_WORLD);
     total_timing = MPI_Wtime();
     for ( m = 0; m < ntimes; ++m ){
@@ -70,6 +68,8 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
     } else {
         stream = fopen(filename,"w");
     }
+    mean = 0;
+    var = 0;
     for ( m = 0; m < ntimes; ++m ) {
         fprintf(stream,"%lf\n",time_list[m]);
         mean += time_list[m];
@@ -78,7 +78,8 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
     for ( m = 0; m < ntimes; ++m ) {
         var += (time_list[m]-mean)*(time_list[m]-mean);
     }
-    std = sqrt(var/m - mean * mean);
+    var = var/m;
+    std = sqrt(var);
     printf("rank %d, mean = %lf, std = %lf, ntimes = %d, total_timing = %lf, mean*ntimes = %lf\n", rank, mean, std, ntimes, total_timing, mean*m);
     if (rank == 1) {
         free(send_buf);
