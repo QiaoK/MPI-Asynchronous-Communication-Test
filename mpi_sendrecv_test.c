@@ -59,19 +59,20 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
         MPI_Barrier(MPI_COMM_WORLD);
     }
     total_timing = MPI_Wtime() - total_timing;
-
-    filename = "sendrecv_results.csv";
-    stream = fopen(filename,"w");
-    mean = 0;
-    var = 0;
-    for ( m = 0; m < ntimes; ++m ) {
-        fprintf(stream,"%lf\n",time_list[m]);
-        mean += time_list[m];
-        var += time_list[m]*time_list[m];
+    if (rank == 0) {
+        filename = "sendrecv_results.csv";
+        stream = fopen(filename,"w");
+        mean = 0;
+        var = 0;
+        for ( m = 0; m < ntimes; ++m ) {
+            fprintf(stream,"%lf\n",time_list[m]);
+            mean += time_list[m];
+            var += time_list[m]*time_list[m];
+        }
+        mean = mean/m;
+        std = sqrt(var/m-mean*mean);
+        printf("rank %d, mean = %lf, std = %lf, ntimes = %d, total_timing = %lf, mean*ntimes = %lf\n", rank, mean, std, ntimes, total_timing, mean*m);
     }
-    mean = mean/m;
-    std = sqrt(var/m-mean*mean);
-    printf("rank %d, mean = %lf, std = %lf, ntimes = %d, total_timing = %lf, mean*ntimes = %lf\n", rank, mean, std, ntimes, total_timing, mean*m);
     if (rank == 1) {
         free(send_buf);
     } else {
