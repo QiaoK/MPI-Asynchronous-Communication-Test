@@ -78,7 +78,7 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
     double x,y;
     for ( m = 0; m < ntimes; ++m ) {
         var += (time_list[m]-mean)*(time_list[m]-mean);
-        x+=time_list[m]*time_list[m]
+        x+=time_list[m]*time_list[m];
     }
     printf("rank %d, %lf\n",rank,x/m-mean*mean);
     var = var/m;
