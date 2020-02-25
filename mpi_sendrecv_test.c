@@ -27,11 +27,15 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
     int i, m, dst;
     char *send_buf= NULL;
     char *recv_buf = NULL;
+    double *time_list;
+    FILE* stream;
     MPI_Status status;
     MPI_Request request;
+    char *filename;
     if (nprocs!=2) {
         return 1;
     }
+    time_list = (double*) malloc(sizeof(double) * ntimes);
     if (rank == 1) {
         send_buf = (char*) malloc(sizeof(char) * data_size);
     } else {
@@ -53,13 +57,27 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
             }
             MPI_Wait(&request,&status);
         }
-        total_start = MPI_Wtime() - total_start;
-        mean += total_start;
-        var += total_start * total_start;
+        time_list[m] = MPI_Wtime() - total_start;
         MPI_Barrier(MPI_COMM_WORLD);
     }
     total_timing = MPI_Wtime() - total_timing;
-    mean = mean / m;
+
+    filename = "sendrecv_results.csv";
+    stream = fopen(filename,"r");
+    if (stream){
+        fclose(stream);
+        stream = fopen(filename,"a");
+    } else {
+        stream = fopen(filename,"w");
+    }
+    for ( m = 0; m < ntimes; ++m ) {
+        fprintf(stream,"%lf\n",time_list[m]);
+        mean += time_list[m];
+    }
+    mean = mean/m;
+    for ( m = 0; m < ntimes; ++m ) {
+        var += (time_list[m]-mean)*(time_list[m]-mean);
+    }
     std = sqrt(var/m - mean * mean);
     printf("rank %d, mean = %lf, std = %lf, ntimes = %d, total_timing = %lf, mean*ntimes = %lf\n", rank, mean, std, ntimes, total_timing, mean*m);
     if (rank == 1) {
@@ -67,7 +85,7 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
     } else {
         free(recv_buf);
     }
-
+    fclose(stream);
     return 0;
 
 }
