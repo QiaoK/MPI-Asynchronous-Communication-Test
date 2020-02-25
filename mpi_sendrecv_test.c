@@ -75,7 +75,7 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
         mean += time_list[m];
     }
     mean = mean/m;
-    double x,y;
+    double x=0;
     for ( m = 0; m < ntimes; ++m ) {
         var += (time_list[m]-mean)*(time_list[m]-mean);
         x+=time_list[m]*time_list[m];
