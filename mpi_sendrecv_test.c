@@ -72,13 +72,13 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
         mean = mean/m;
         std = sqrt(var/m-mean*mean);
         printf("rank %d, mean = %lf, std = %lf, ntimes = %d, total_timing = %lf, mean*ntimes = %lf\n", rank, mean, std, ntimes, total_timing, mean*m);
+        fclose(stream);
     }
     if (rank == 1) {
         free(send_buf);
     } else {
         free(recv_buf);
     }
-    fclose(stream);
     return 0;
 
 }
