@@ -853,9 +853,9 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
                 }
             }
         }
+        MPI_Barrier(MPI_COMM_WORLD);
     }
     timer->total_time += MPI_Wtime() - total_start;
-
     all_to_many_alltoall_clean(sdispls, rdispls, sendcounts, recvcounts, dtypes);
 
     clean_all_to_many(rank, procs, cb_nodes, rank_list, myindex, iter, &send_buf, &recv_buf, &status, &requests, &r_lens, isagg);
@@ -1916,6 +1916,7 @@ int send_wait_all_timing(int rank, int procs, Timer timer1, char* filename) {
         fprintf(stream, "%d,%lf\n", i, send_wait_all_times[i]);
     }
     fclose(stream);
+    free(send_wait_all_times);
     return 0;
 }
 
