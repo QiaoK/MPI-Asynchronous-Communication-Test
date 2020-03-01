@@ -1905,7 +1905,7 @@ int send_wait_all_timing(int rank, int procs, Timer timer1, char* filename) {
     } else {
         send_wait_all_times = NULL;
     }
-    MPI_Gather(&(timer1->send_wait_all_time), 1, MPI_DOUBLE,
+    MPI_Gather(&(timer1.send_wait_all_time), 1, MPI_DOUBLE,
                    send_wait_all_times, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     if (rank!=0) {
