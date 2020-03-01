@@ -138,8 +138,8 @@ int clean_many_to_all(int rank, int procs, int cb_nodes, int *rank_list, int myi
         if ( check_buffer(rank_list[i], recv_buf[0][i], r_lens[0][i], rank, iter) ){
             printf("rank %d, message is wrong from rank %d\n",rank, rank_list[i]);
         }
-*/
     }
+*/
     rank = 0;
     procs = 0;
     cb_nodes = 0;
