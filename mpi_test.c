@@ -727,7 +727,7 @@ int all_to_many_scattered_isend(int rank, int isagg, int procs, int cb_nodes, in
     MPI_Status *status;
     MPI_Request *requests;
     MPI_Datatype *dtypes;
-    double start;
+    double start = 0;
 
     timer->post_request_time = 0;
     timer->recv_wait_all_time = 0;
@@ -1913,7 +1913,7 @@ int send_wait_all_timing(int rank, int procs, Timer timer1, char* filename) {
     }
     stream = fopen(filename,"w");
     for ( i = 0; i < procs; ++i ){
-        fprintf(stream, "%d,%lf", i, send_wait_all_times[i]);
+        fprintf(stream, "%d,%lf\n", i, send_wait_all_times[i]);
     }
     fclose(stream);
     return 0;
