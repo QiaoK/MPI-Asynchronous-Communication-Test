@@ -1894,7 +1894,30 @@ int create_aggregator_list(int rank, int procs, int cb_nodes, int proc_node, int
     return 0;
 }
 
-int summarize_results(int procs, int cb_nodes, int data_size, int comm_size, int ntimes, int type, char* filename, char* prefix, Timer timer1,Timer max_timer1){
+int send_wait_all_timing(int rank, int procs, Timer timer1, char* filename) {
+    FILE* stream;
+    double *send_wait_all_times;
+    int i;
+    if (rank == 0) {
+        send_wait_all_times = (double*)malloc(sizeof(double)*procs);
+    } else {
+        send_wait_all_times = NULL;
+    }
+    MPI_Gather(&(timers1->send_wait_all_time), 1, MPI_DOUBLE,
+                   send_wait_all_times, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD)
+
+    if (rank!=0) {
+        return 0;
+    }
+    stream = fopen(filename,"w");
+    for ( i = 0; i < procs; ++i ){
+        fprintf(stream, "%d,%lf", i, send_wait_all_times[i]);
+    }
+    fclose(stream);
+    return 0;
+}
+
+int summarize_results(int procs, int cb_nodes, int data_size, int comm_size, int ntimes, int type, char* filename, char* prefix, Timer timer1,Timer max_timer1) {
     FILE* stream;
     printf("| --------------------------------------\n");
     printf("| %s rank 0 request post time = %lf\n", prefix, timer1.post_request_time);
@@ -2096,6 +2119,7 @@ int main(int argc, char **argv){
         if (method == 0 || method == 13){
             all_to_many_scattered(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+            send_wait_all_timing(rank, procs, timer1, "send_wait_all_times.csv");
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many scattered", timer1, max_timer1);
             }
