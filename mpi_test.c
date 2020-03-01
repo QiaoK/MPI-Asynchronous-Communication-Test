@@ -132,9 +132,9 @@ int prepare_many_to_all_data(char ***send_buf, char*** recv_buf, MPI_Status **st
 }
 
 int clean_many_to_all(int rank, int procs, int cb_nodes, int *rank_list, int myindex, int iter, char ***send_buf, char*** recv_buf, MPI_Status **status, MPI_Request **requests, int **r_lens, int isagg){
+/*
     int i;
     for ( i = 0; i < cb_nodes; ++i ){
-/*
         if ( check_buffer(rank_list[i], recv_buf[0][i], r_lens[0][i], rank, iter) ){
             printf("rank %d, message is wrong from rank %d\n",rank, rank_list[i]);
         }
@@ -201,7 +201,9 @@ int prepare_all_to_many_data(char ***send_buf, char*** recv_buf, MPI_Status **st
 }
 
 int clean_all_to_many(int rank, int procs, int cb_nodes, int *rank_list, int myindex, int iter, char ***send_buf, char*** recv_buf, MPI_Status **status, MPI_Request **requests, int **r_lens, int isagg){
+/*
     int i = 0;
+*/
     free(send_buf[0][0]);
     free(send_buf[0]);
     free(status[0]);
@@ -417,7 +419,7 @@ int all_to_many_tam(int rank, int isagg, int procs, int cb_nodes, int data_size,
 
 int many_to_all_pairwise(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter, int ntimes){
     double total_start;
-    int i, j, m, myindex = 0, s_len, *r_lens, pof2, src, dst, src_index;
+    int i, m, myindex = 0, s_len, *r_lens, pof2, src, dst/*, src_index*/;
     char **send_buf;
     char **recv_buf = NULL;
     int *sendcounts = NULL, *recvcounts = NULL, *sdispls = NULL, *rdispls = NULL;
@@ -506,7 +508,7 @@ int many_to_all_pairwise(int rank, int isagg, int procs, int cb_nodes, int data_
 
 int all_to_many_pairwise(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter, int ntimes){
     double total_start;
-    int i, j, m, myindex = 0, s_len, *r_lens, pof2, src, dst, dst_index;
+    int i, m, myindex = 0, s_len, *r_lens, pof2, src, dst/*, dst_index*/;
     char **send_buf;
     char **recv_buf = NULL;
     int *sendcounts = NULL, *recvcounts = NULL, *sdispls = NULL, *rdispls = NULL;
@@ -1904,7 +1906,7 @@ int send_wait_all_timing(int rank, int procs, Timer timer1, char* filename) {
         send_wait_all_times = NULL;
     }
     MPI_Gather(&(timers1->send_wait_all_time), 1, MPI_DOUBLE,
-                   send_wait_all_times, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD)
+                   send_wait_all_times, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     if (rank!=0) {
         return 0;
