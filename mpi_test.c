@@ -1910,8 +1910,8 @@ int send_wait_all_timing(int rank, int procs, int ntimes, Timer *timers, char* f
     } else {
         all_timers = NULL;
     }
-    MPI_Gather(timers, sizeof(Timer)*ntimes, MPI_DOUBLE,
-                   all_timers, sizeof(Timer)*ntimes, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Gather(timers, sizeof(Timer)*ntimes, MPI_BYTE,
+                   all_timers, sizeof(Timer)*ntimes, MPI_BYTE, 0, MPI_COMM_WORLD);
 
     if (rank!=0) {
         return 0;
