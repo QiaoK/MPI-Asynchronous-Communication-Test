@@ -852,6 +852,7 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
                     timer->send_wait_all_time += MPI_Wtime() - start;
                 }
             }
+            MPI_Barrier(MPI_COMM_WORLD);
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
