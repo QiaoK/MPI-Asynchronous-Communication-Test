@@ -1906,7 +1906,7 @@ int send_wait_all_timing(int rank, int procs, int ntimes, Timer *timers, char* f
     Timer *all_timers;
     int i ,j;
     if (rank == 0) {
-        all_timers = (double*)malloc(sizeof(Timer)*ntimes*procs);
+        all_timers = (Timer*)malloc(sizeof(Timer)*ntimes*procs);
     } else {
         all_timers = NULL;
     }
