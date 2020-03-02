@@ -1925,7 +1925,7 @@ int send_wait_all_timing(int rank, int procs, int ntimes, Timer timer1, Timer *t
         fprintf(stream, "\n");
     }
     fclose(stream);
-    free(send_wait_all_times);
+    free(all_timers);
     return 0;
 }
 
