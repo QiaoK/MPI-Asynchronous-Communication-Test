@@ -845,19 +845,19 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
                 }
             }
             timer->post_request_time += MPI_Wtime() - start;
-            timers[i].post_request_time = MPI_Wtime() - start;
+            timers[m].post_request_time = MPI_Wtime() - start;
             if (j) {
                 start = MPI_Wtime();
                 MPI_Waitall(j, requests, status);
                 timer->recv_wait_all_time += MPI_Wtime() - start;
-                timers[i].recv_wait_all_time = MPI_Wtime() - start;
+                timers[m].recv_wait_all_time = MPI_Wtime() - start;
                 if (!isagg) {
                     timer->send_wait_all_time += MPI_Wtime() - start;
-                    timers[i].send_wait_all_time = MPI_Wtime() - start;
+                    timers[m].send_wait_all_time = MPI_Wtime() - start;
                 }
             }
         }
-        timers[i].total_time = MPI_Wtime() - total_start2;
+        timers[m].total_time = MPI_Wtime() - total_start2;
         MPI_Barrier(MPI_COMM_WORLD);
     }
     timer->total_time += MPI_Wtime() - total_start;
@@ -1901,7 +1901,7 @@ int create_aggregator_list(int rank, int procs, int cb_nodes, int proc_node, int
     return 0;
 }
 
-int send_wait_all_timing(int rank, int procs, int ntimes, Timer timer1, Timer *timers, char* filename) {
+int send_wait_all_timing(int rank, int procs, int ntimes, Timer *timers, char* filename) {
     FILE* stream;
     Timer *all_timers;
     int i ,j;
@@ -2130,7 +2130,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 13){
             Timer *timers = (Timer*) malloc(sizeof(Timer)*ntimes);
-            all_to_many_scattered(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, timers, i, ntimes);
+            all_to_many_scattered(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, timers, i, ntimes);
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             char filename[200];
             sprintf(filename,"send_wait_all_times_%d.csv",comm_size);
