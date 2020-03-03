@@ -20,7 +20,7 @@
         printf("Error at line %d: (%s)\n", __LINE__,errorString); \
     } \
 }
-#define MAP_DATA(a,b,c,d) ((a)*7+(b)*3+(c)*5+11*((a)-22)*((b)-56)+(d))
+#define MAP_DATA(a,b,c,d) (a+b+c+d)
 
 typedef struct{
     double post_request_time;
