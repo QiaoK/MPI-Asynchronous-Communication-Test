@@ -794,7 +794,7 @@ int all_to_many_scattered_isend(int rank, int isagg, int procs, int cb_nodes, in
 
 }
 
-int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, Timer *timers, int iter, int ntimes){
+int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, int barrier_type, Timer *timer, Timer *timers, int iter, int ntimes){
     double total_start, total_start2;
     int i, j, ii, ss, m, bblock, myindex = 0, s_len, *r_lens, dst;
     char **send_buf;
@@ -857,12 +857,20 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
                     timers[m].send_wait_all_time = timers[m].recv_wait_all_time;
                 }
             }
+            if (barrier_type == 2) {
+                start = MPI_Wtime();
+                MPI_Barrier(MPI_COMM_WORLD);
+                timers[m].barrier_time = MPI_Wtime() - start;
+                timer->barrier_time += timers[m].barrier_time;
+            }
         }
         timers[m].total_time = MPI_Wtime() - total_start2;
-        start = MPI_Wtime();
-        MPI_Barrier(MPI_COMM_WORLD);
-        timers[m].barrier_time = MPI_Wtime() - start;
-        timer->barrier_time += timers[m].barrier_time;
+        if (barrier_type == 1) {
+            start = MPI_Wtime();
+            MPI_Barrier(MPI_COMM_WORLD);
+            timers[m].barrier_time = MPI_Wtime() - start;
+            timer->barrier_time += timers[m].barrier_time;
+        }
     }
     timer->total_time += MPI_Wtime() - total_start;
     all_to_many_alltoall_clean(sdispls, rdispls, sendcounts, recvcounts, dtypes);
@@ -2018,7 +2026,7 @@ int summarize_results(int procs, int cb_nodes, int data_size, int comm_size, int
 }
 
 int main(int argc, char **argv){
-    int rank, procs, cb_nodes = 1, method = 0, data_size = 0, proc_node = 1, isagg, i, comm_size = 200000000, iter = 1, ntimes = 1, aggregator_type = 1;
+    int rank, procs, cb_nodes = 1, method = 0, data_size = 0, proc_node = 1, isagg, i, comm_size = 200000000, iter = 1, ntimes = 1, aggregator_type = 1, barrier_type = 0;
     int *rank_list;
     char prefix[200];
     prefix[0] = '\0';
@@ -2055,6 +2063,9 @@ int main(int argc, char **argv){
                 break;
             case 'r':
                 strcpy(prefix, optarg);
+                break;
+            case 'b':
+                barrier_type = atoi(optarg);
                 break;
             default:
                 if (rank==0) usage(argv[0]);
@@ -2171,7 +2182,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 13){
             Timer *timers = (Timer*) malloc(sizeof(Timer)*ntimes);
-            all_to_many_scattered(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, timers, i, ntimes);
+            all_to_many_scattered(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, barrier_type, &timer1, timers, i, ntimes);
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             save_all_timing(rank, procs, ntimes, comm_size, timers, prefix);
             if (rank == 0){
