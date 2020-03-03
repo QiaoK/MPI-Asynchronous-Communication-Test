@@ -2073,28 +2073,28 @@ int main(int argc, char **argv){
     for ( i = 0; i < iter; ++i ){
         if (method == 0 || method == 1){
             all_to_many(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many", timer1, max_timer1);
             }
         }
         if (method == 0 || method == 2){
             many_to_all(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "Many to all", timer1, max_timer1);
             }
         }
         if (method == 0 || method == 3){
             all_to_many_balanced(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many balanced", timer1, max_timer1);
             }
         }
         if (method == 0 || method == 4){
             many_to_all_balanced(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "Many to all balanced", timer1, max_timer1);
             }
@@ -2102,7 +2102,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 5){
             many_to_all_benchmark(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "Many to all benchmark", timer1, max_timer1);
             }
@@ -2110,7 +2110,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 6){
             all_to_many_sync(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many sync", timer1, max_timer1);
             }
@@ -2118,7 +2118,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 7){
             all_to_many_half_sync(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many half sync", timer1, max_timer1);
             }
@@ -2126,7 +2126,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 8){
             all_to_many_benchmark(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many benchmark", timer1, max_timer1);
             }
@@ -2134,7 +2134,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 9){
             all_to_many_pairwise(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many pairwise", timer1, max_timer1);
             }
@@ -2142,7 +2142,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 10){
             many_to_all_pairwise(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "Many to all pairwise", timer1, max_timer1);
             }
@@ -2150,7 +2150,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 11){
             many_to_all_half_sync(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "Many to all half sync", timer1, max_timer1);
             }
@@ -2158,7 +2158,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 12){
             all_to_many_half_sync2(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many half sync 2", timer1, max_timer1);
             }
@@ -2167,7 +2167,7 @@ int main(int argc, char **argv){
         if (method == 0 || method == 13){
             Timer *timers = (Timer*) malloc(sizeof(Timer)*ntimes);
             all_to_many_scattered(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, timers, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             save_all_timing(rank, procs, ntimes, comm_size, timers);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many scattered", timer1, max_timer1);
@@ -2176,7 +2176,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 14){
             many_to_all_scattered(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "Many to all scattered", timer1, max_timer1);
             }
@@ -2184,7 +2184,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 15){
             all_to_many_tam(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, proc_node, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many TAM", timer1, max_timer1);
             }
@@ -2192,7 +2192,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 16){
             many_to_all_tam(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, proc_node, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "Many to all TAM", timer1, max_timer1);
             }
@@ -2200,7 +2200,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 17){
             all_to_many_node_robin(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, proc_node, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many node robin", timer1, max_timer1);
             }
@@ -2208,7 +2208,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 18){
             all_to_many_balanced_control(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many balanced control", timer1, max_timer1);
             }
@@ -2216,7 +2216,7 @@ int main(int argc, char **argv){
 
         if (method == 0 || method == 19){
             all_to_many_scattered_isend(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, i, ntimes);
-            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), sizeof(Timer), MPI_BYTE, MPI_MAX, 0, MPI_COMM_WORLD);
+            MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 5, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many scattered isend", timer1, max_timer1);
             }
