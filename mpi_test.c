@@ -1907,11 +1907,11 @@ int create_aggregator_list(int rank, int procs, int cb_nodes, int proc_node, int
 
 int save_all_timing(int rank, int procs, int ntimes, int comm_size, Timer *timers) {
     FILE* stream;
-    double *all_timers;
+    Timer *all_timers;
     int i ,j;
     char filename[200];
     if (rank == 0) {
-        all_timers = (double*)malloc(sizeof(double)*ntimes*procs);
+        all_timers = (Timer*)malloc(sizeof(Timer)*ntimes*procs);
     } else {
         all_timers = NULL;
     }
