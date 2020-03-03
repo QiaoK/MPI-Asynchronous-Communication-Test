@@ -2168,7 +2168,7 @@ int main(int argc, char **argv){
             Timer *timers = (Timer*) malloc(sizeof(Timer)*ntimes);
             all_to_many_scattered(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, timers, i, ntimes);
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-            save_all_timing(rank, procs, ntimes, timers, filename);
+            save_all_timing(rank, procs, ntimes, comm_size, timers);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many scattered", timer1, max_timer1);
             }
