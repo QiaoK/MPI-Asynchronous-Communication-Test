@@ -857,12 +857,12 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
                     timers[m].send_wait_all_time = timers[m].recv_wait_all_time;
                 }
             }
-        }
-        timers[m].total_time = MPI_Wtime() - total_start2;
         start = MPI_Wtime();
         MPI_Barrier(MPI_COMM_WORLD);
         timers[m].barrier_time = MPI_Wtime() - start;
         timer->barrier_time += timers[m].barrier_time;
+        }
+        timers[m].total_time = MPI_Wtime() - total_start2;
     }
     timer->total_time += MPI_Wtime() - total_start;
     all_to_many_alltoall_clean(sdispls, rdispls, sendcounts, recvcounts, dtypes);
