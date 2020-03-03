@@ -26,6 +26,7 @@ typedef struct{
     double post_request_time;
     double send_wait_all_time;
     double recv_wait_all_time;
+    double barrier_time;
     double total_time;
 }Timer;
 
@@ -844,21 +845,24 @@ int all_to_many_scattered(int rank, int isagg, int procs, int cb_nodes, int data
                     MPI_Issend(send_buf[0] + sdispls[dst], sendcounts[dst], dtypes[dst], dst, rank + dst, MPI_COMM_WORLD, &requests[j++]);
                 }
             }
-            timer->post_request_time += MPI_Wtime() - start;
             timers[m].post_request_time = MPI_Wtime() - start;
+            timer->post_request_time += timers[m].post_request_time;
             if (j) {
                 start = MPI_Wtime();
                 MPI_Waitall(j, requests, status);
-                timer->recv_wait_all_time += MPI_Wtime() - start;
                 timers[m].recv_wait_all_time = MPI_Wtime() - start;
+                timer->recv_wait_all_time += timers[m].recv_wait_all_time;
                 if (!isagg) {
-                    timer->send_wait_all_time += MPI_Wtime() - start;
-                    timers[m].send_wait_all_time = MPI_Wtime() - start;
+                    timer->send_wait_all_time += timers[m].recv_wait_all_time;
+                    timers[m].send_wait_all_time = timers[m].recv_wait_all_time;
                 }
             }
         }
         timers[m].total_time = MPI_Wtime() - total_start2;
+        start = MPI_Wtime();
         MPI_Barrier(MPI_COMM_WORLD);
+        timers[m].barrier_time = MPI_Wtime() - start;
+        timer->barrier_time += timers[m].barrier_time;
     }
     timer->total_time += MPI_Wtime() - total_start;
     all_to_many_alltoall_clean(sdispls, rdispls, sendcounts, recvcounts, dtypes);
@@ -1901,12 +1905,13 @@ int create_aggregator_list(int rank, int procs, int cb_nodes, int proc_node, int
     return 0;
 }
 
-int send_wait_all_timing(int rank, int procs, int ntimes, Timer *timers, char* filename) {
+int save_all_timing(int rank, int procs, int ntimes, int comm_size, Timer *timers) {
     FILE* stream;
-    Timer *all_timers;
+    double *all_timers;
     int i ,j;
+    char filename[200];
     if (rank == 0) {
-        all_timers = (Timer*)malloc(sizeof(Timer)*ntimes*procs);
+        all_timers = (double*)malloc(sizeof(double)*ntimes*procs);
     } else {
         all_timers = NULL;
     }
@@ -1916,11 +1921,42 @@ int send_wait_all_timing(int rank, int procs, int ntimes, Timer *timers, char* f
     if (rank!=0) {
         return 0;
     }
+    sprintf(filename,"send_wait_all_times_%d.csv",comm_size);
     stream = fopen(filename,"w");
     for ( i = 0; i < procs; ++i ){
         fprintf(stream, "%d",i);
         for ( j = 0; j < ntimes; ++j ) {
             fprintf(stream, ",%lf", all_timers[i*ntimes+j].send_wait_all_time);
+        }
+        fprintf(stream, "\n");
+    }
+    fclose(stream);
+    sprintf(filename,"total_times_%d.csv",comm_size);
+    stream = fopen(filename,"w");
+    for ( i = 0; i < procs; ++i ){
+        fprintf(stream, "%d",i);
+        for ( j = 0; j < ntimes; ++j ) {
+            fprintf(stream, ",%lf", all_timers[i*ntimes+j].total_time);
+        }
+        fprintf(stream, "\n");
+    }
+    fclose(stream);
+    sprintf(filename,"post_request_time_%d.csv",comm_size);
+    stream = fopen(filename,"w");
+    for ( i = 0; i < procs; ++i ){
+        fprintf(stream, "%d",i);
+        for ( j = 0; j < ntimes; ++j ) {
+            fprintf(stream, ",%lf", all_timers[i*ntimes+j].post_request_time);
+        }
+        fprintf(stream, "\n");
+    }
+    fclose(stream);
+    sprintf(filename,"barrier_time_%d.csv",comm_size);
+    stream = fopen(filename,"w");
+    for ( i = 0; i < procs; ++i ){
+        fprintf(stream, "%d",i);
+        for ( j = 0; j < ntimes; ++j ) {
+            fprintf(stream, ",%lf", all_timers[i*ntimes+j].barrier_time);
         }
         fprintf(stream, "\n");
     }
@@ -2132,9 +2168,7 @@ int main(int argc, char **argv){
             Timer *timers = (Timer*) malloc(sizeof(Timer)*ntimes);
             all_to_many_scattered(rank, isagg, procs, cb_nodes, data_size, rank_list, comm_size, &timer1, timers, i, ntimes);
             MPI_Reduce((double*)(&timer1), (double*)(&max_timer1), 4, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-            char filename[200];
-            sprintf(filename,"send_wait_all_times_%d.csv",comm_size);
-            send_wait_all_timing(rank, procs, ntimes, timers, filename);
+            save_all_timing(rank, procs, ntimes, timers, filename);
             if (rank == 0){
                 summarize_results(procs, cb_nodes, data_size, comm_size, ntimes, aggregator_type, "results.csv", "All to many scattered", timer1, max_timer1);
             }
