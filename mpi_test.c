@@ -1360,7 +1360,7 @@ int all_to_many_balanced_pre_send(int rank, int isagg, int procs, int cb_nodes, 
         send_start = rank / ceiling;
     }
     for ( m = 0; m < ntimes; ++m ){
-        
+        j = 0;
         for ( k = 0; k < cb_nodes; ++k ) {
             i = (send_start + k) % comm_size;
             if ( rank_list[i] != rank ){
@@ -1373,7 +1373,6 @@ int all_to_many_balanced_pre_send(int rank, int isagg, int procs, int cb_nodes, 
             if ( procs - k < comm_size ){
                 comm_size = procs - k;
             }
-            j = 0;
             if (isagg){
                 for ( i = 0; i < comm_size; ++i ){
                     if (myindex < remainder) {
