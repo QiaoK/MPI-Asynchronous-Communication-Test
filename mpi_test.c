@@ -1330,13 +1330,14 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
 
 int all_to_many_balanced_pre_send(int rank, int isagg, int procs, int cb_nodes, int data_size, int *rank_list, int comm_size, Timer *timer, int iter, int ntimes){
     double start, total_start;
-    int i, j, k, x, m, temp, send_start, s_len, *r_lens;
+    int i, j, k, m, x, temp, send_start, s_len, *r_lens;
     int myindex = 0;
     int ceiling, floor, remainder;
     char **send_buf;
     char **recv_buf = NULL;
+    
     MPI_Status *status;
-    MPI_Request *requests;
+    MPI_Request *requests, *recv_requests;
     timer->post_request_time = 0;
     timer->recv_wait_all_time = 0;
     timer->send_wait_all_time = 0;
@@ -1359,12 +1360,15 @@ int all_to_many_balanced_pre_send(int rank, int isagg, int procs, int cb_nodes, 
         send_start = rank / ceiling;
     }
     for ( m = 0; m < ntimes; ++m ){
+        
         for ( k = 0; k < cb_nodes; ++k ) {
             i = (send_start + k) % comm_size;
             if ( rank_list[i] != rank ){
                 MPI_Issend(send_buf[i], s_len, MPI_BYTE, rank_list[i], rank + rank_list[i], MPI_COMM_WORLD, &requests[j++]);
             }
         }
+        recv_requests = requests + j;
+        x = 0;
         for ( k = 0; k < procs; k+=comm_size ){
             if ( procs - k < comm_size ){
                 comm_size = procs - k;
@@ -1379,21 +1383,24 @@ int all_to_many_balanced_pre_send(int rank, int isagg, int procs, int cb_nodes, 
                     }
                     if (temp != rank){
                         start = MPI_Wtime();
-                        MPI_Irecv(recv_buf[temp], r_lens[temp], MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &requests[j++]);
+                        MPI_Irecv(recv_buf[temp], r_lens[temp], MPI_BYTE, temp, rank + temp, MPI_COMM_WORLD, &recv_requests[x++]);
                         timer->post_request_time += MPI_Wtime() - start;
                     } else {
                         memcpy(recv_buf[temp], send_buf[myindex], r_lens[temp] * sizeof(char));
                     }
                 }
             }
-            if (j) {
+            if (x) {
                 start = MPI_Wtime();
-                MPI_Waitall(j, requests, status);
+                MPI_Waitall(x, recv_requests, status);
                 timer->recv_wait_all_time += MPI_Wtime() - start;
-                if (!isagg) {
-                    timer->send_wait_all_time += MPI_Wtime() - start;
-                }
             }
+        }
+        if (j) {
+            start = MPI_Wtime();
+            MPI_Waitall(j, requests, status);
+            timer->recv_wait_all_time += MPI_Wtime() - start;
+            timer->send_wait_all_time += MPI_Wtime() - start;
         }
     }
     timer->total_time += MPI_Wtime() - total_start;
