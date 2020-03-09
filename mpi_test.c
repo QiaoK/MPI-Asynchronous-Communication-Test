@@ -1139,6 +1139,8 @@ int all_to_many_node_robin(int rank, int isagg, int procs, int cb_nodes, int dat
     int ceiling, floor, remainder;
     char **send_buf;
     char **recv_buf = NULL;
+    int bblock;
+
     MPI_Status *status;
     MPI_Request *requests;
     timer->post_request_time = 0;
@@ -1152,6 +1154,7 @@ int all_to_many_node_robin(int rank, int isagg, int procs, int cb_nodes, int dat
     if (comm_size > procs){
         comm_size = procs;
     }
+    bblock = comm_size;
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
     
@@ -1164,6 +1167,7 @@ int all_to_many_node_robin(int rank, int isagg, int procs, int cb_nodes, int dat
         send_start = rank_index / ceiling;
     }
     for ( m = 0; m < ntimes; ++m ){
+        comm_size = bblock;
         for ( k = 0; k < procs; k+=comm_size ){
             if ( procs - k < comm_size ){
                 comm_size = procs - k;
