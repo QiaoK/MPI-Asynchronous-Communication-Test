@@ -1362,7 +1362,7 @@ int all_to_many_balanced_pre_send(int rank, int isagg, int procs, int cb_nodes, 
     for ( m = 0; m < ntimes; ++m ){
         j = 0;
         for ( k = 0; k < cb_nodes; ++k ) {
-            i = (send_start + k) % comm_size;
+            i = (send_start + k) % cb_nodes;
             if ( rank_list[i] != rank ){
                 MPI_Issend(send_buf[i], s_len, MPI_BYTE, rank_list[i], rank + rank_list[i], MPI_COMM_WORLD, &requests[j++]);
             }
@@ -1398,7 +1398,6 @@ int all_to_many_balanced_pre_send(int rank, int isagg, int procs, int cb_nodes, 
         if (j) {
             start = MPI_Wtime();
             MPI_Waitall(j, requests, status);
-            timer->recv_wait_all_time += MPI_Wtime() - start;
             timer->send_wait_all_time += MPI_Wtime() - start;
         }
     }
