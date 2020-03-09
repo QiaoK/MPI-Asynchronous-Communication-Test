@@ -1229,6 +1229,8 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
     int ceiling, floor, remainder;
     char **send_buf;
     char **recv_buf = NULL;
+    int bblock;
+
     MPI_Comm signal_comm;
     MPI_Status *status;
     MPI_Request *requests;
@@ -1242,7 +1244,7 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
     if (comm_size > procs){
         comm_size = procs;
     }
-
+    comm_size = bblock;
     MPI_Comm_dup(MPI_COMM_WORLD, &signal_comm);
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -1257,6 +1259,7 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
         send_start = rank / ceiling;
     }
     for ( m = 0; m < ntimes; ++m ){
+        comm_size = bblock;
         for ( k = 0; k < procs; k+=comm_size ){
             if ( procs - k < comm_size ){
                 comm_size = procs - k;
@@ -1335,6 +1338,7 @@ int all_to_many_balanced_pre_send(int rank, int isagg, int procs, int cb_nodes, 
     int ceiling, floor, remainder;
     char **send_buf;
     char **recv_buf = NULL;
+    int bblock;
     
     MPI_Status *status;
     MPI_Request *requests, *recv_requests;
@@ -1348,6 +1352,7 @@ int all_to_many_balanced_pre_send(int rank, int isagg, int procs, int cb_nodes, 
     if (comm_size > procs){
         comm_size = procs;
     }
+    bblock = comm_size;
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
     
@@ -1360,6 +1365,7 @@ int all_to_many_balanced_pre_send(int rank, int isagg, int procs, int cb_nodes, 
         send_start = rank / ceiling;
     }
     for ( m = 0; m < ntimes; ++m ){
+        comm_size = bblock;
         j = 0;
         for ( k = 0; k < cb_nodes; ++k ) {
             i = (send_start + k) % cb_nodes;
@@ -1416,6 +1422,7 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
     int ceiling, floor, remainder;
     char **send_buf;
     char **recv_buf = NULL;
+    int bblock;
     MPI_Status *status;
     MPI_Request *requests;
     timer->post_request_time = 0;
@@ -1428,6 +1435,7 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
     if (comm_size > procs){
         comm_size = procs;
     }
+    bblock = comm_size;
     MPI_Barrier(MPI_COMM_WORLD);
     total_start = MPI_Wtime();
     
@@ -1440,6 +1448,7 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
         send_start = rank / ceiling;
     }
     for ( m = 0; m < ntimes; ++m ){
+        comm_size = bblock;
         for ( k = 0; k < procs; k+=comm_size ){
             if ( procs - k < comm_size ){
                 comm_size = procs - k;
