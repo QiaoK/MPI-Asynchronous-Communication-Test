@@ -1248,7 +1248,7 @@ int all_to_many_balanced_control(int rank, int isagg, int procs, int cb_nodes, i
     if (comm_size > procs){
         comm_size = procs;
     }
-    comm_size = bblock;
+    bblock = comm_size;
     MPI_Comm_dup(MPI_COMM_WORLD, &signal_comm);
 
     MPI_Barrier(MPI_COMM_WORLD);
