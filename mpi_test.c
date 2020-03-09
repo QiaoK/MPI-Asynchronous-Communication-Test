@@ -1474,7 +1474,6 @@ int all_to_many_balanced(int rank, int isagg, int procs, int cb_nodes, int data_
                     }
                 }
             }
-            MPI_Barrier(MPI_COMM_WORLD);
             for ( x = 0; x < cb_nodes; ++x ) {
                 if (send_start < remainder) {
                     temp = k + send_start * ceiling;
