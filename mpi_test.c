@@ -1368,11 +1368,11 @@ int all_to_many_balanced_pre_send(int rank, int isagg, int procs, int cb_nodes, 
             }
         }
         recv_requests = requests + j;
-        x = 0;
         for ( k = 0; k < procs; k+=comm_size ){
             if ( procs - k < comm_size ){
                 comm_size = procs - k;
             }
+            x = 0;
             if (isagg){
                 for ( i = 0; i < comm_size; ++i ){
                     if (myindex < remainder) {
