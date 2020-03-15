@@ -75,7 +75,7 @@ int pt2pt_statistics(int rank, int nprocs, int data_size, int ntimes, int runs){
 
 int main(int argc, char **argv){
     int rank, procs, i, ntimes = 0, data_size = 0, runs = 0;
-    int statuses, status;
+    long long int statuses, status;
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&procs);
@@ -95,9 +95,9 @@ int main(int argc, char **argv){
       	        return 0;
         }
     }
-    statuses = (int)MPI_STATUSES_IGNORE;
-    status = (int)MPI_STATUS_IGNORE;
-    printf("status = %d, statuses = %d\n", status, statuses);
+    statuses = (long long int)MPI_STATUSES_IGNORE;
+    status = (long long int)MPI_STATUS_IGNORE;
+    printf("status = %lld, statuses = %lld\n", status, statuses);
     pt2pt_statistics(rank, procs, data_size, ntimes, runs);
     MPI_Finalize();
     return 0;
